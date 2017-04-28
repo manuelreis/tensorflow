@@ -33,7 +33,7 @@ enum LinkerInitialized { LINKER_INITIALIZED };
 // additional LinkerInitialized constructor interface.
 class LOCKABLE mutex : public std::mutex {
  public:
-  mutex() : _locked(false) {}
+  mutex() : locked_(false) {}
   // The default implementation of std::mutex is safe to use after the linker
   // initializations
   explicit mutex(LinkerInitialized x) {}
@@ -44,7 +44,7 @@ class LOCKABLE mutex : public std::mutex {
   }
   
   bool try_lock() EXCLUSIVE_TRYLOCK_FUNCTION(true) {
-    bool success = std::mutex:try_lock();
+    bool success = std::mutex::try_lock();
     if (success) {
         locked_ = true;
     }
