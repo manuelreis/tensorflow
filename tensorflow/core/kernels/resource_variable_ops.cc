@@ -54,6 +54,7 @@ class ReadVariableOp : public OpKernel {
     // copying by coordinating with the writing code. Do this. This will also
     // obviate the need to hold a lock here.
     mutex_lock ml(*variable->mu());
+    std::cout << "DEBUG_TENSOR is_locked: " << *variable->mu().is_locked() << std::endl;
     Tensor* out = nullptr;
     OP_REQUIRES_OK(ctx,
                    ctx->allocate_output(0, variable->tensor()->shape(), &out));
