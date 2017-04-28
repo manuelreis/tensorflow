@@ -53,14 +53,16 @@ class ReadVariableOp : public OpKernel {
     // TODO(apassos): It's possible to do copy-on-write here instead of always
     // copying by coordinating with the writing code. Do this. This will also
     // obviate the need to hold a lock here.
-    mutex_lock ml(*variable->mu());
-    std::cout << "DEBUG_TENSOR is_locked: " << *variable->mu().is_locked() << std::endl;
+    //mutex_lock ml(*variable->mu());
+    variable->mu()->lock();
+    std::cout << "DEBUG_TENSOR is_locked: " << variable->mu()->is_locked() << std::endl;
     Tensor* out = nullptr;
     OP_REQUIRES_OK(ctx,
                    ctx->allocate_output(0, variable->tensor()->shape(), &out));
     functor::DenseUpdate<Device, T, ASSIGN> copy_functor;
     const Tensor& t = *variable->tensor();
     copy_functor(ctx->eigen_device<Device>(), out->flat<T>(), t.flat<T>());
+    variable->mu()->unlock();
   }
 };
 
