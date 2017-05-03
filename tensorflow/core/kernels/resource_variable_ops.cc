@@ -30,6 +30,8 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/util/util.h"
 
+#include "tm.h"
+
 namespace tensorflow {
 
 REGISTER_RESOURCE_HANDLE_KERNEL(Var);

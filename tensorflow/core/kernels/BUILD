@@ -1511,10 +1511,16 @@ tf_kernel_library(
     ],
 )
 
+cc_inc_library(
+    name = "htm",
+    hdrs = ["tm.h"]
+)
+
 tf_kernel_library(
     name = "resource_variable_ops",
     srcs = ["resource_variable_ops.cc"],
     deps = [
+        "htm",
         ":bounds_check",
         ":dense_update_ops",
         ":gather_functor",
