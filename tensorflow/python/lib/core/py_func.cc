@@ -268,7 +268,7 @@ Status ConvertNdarrayToTensor(PyObject* obj, Tensor* ret) {
   DataType dtype = DT_INVALID;
   TensorShape shape;
   for (int i = 0; i < PyArray_NDIM(input); ++i) {
-    shape.AddDim(PyArray_DIMS(input)[i]);
+    shape.AddDim(PyArray_SHAPE(input)[i]);
   }
   const int np_type = PyArray_TYPE(input);
   switch (np_type) {
