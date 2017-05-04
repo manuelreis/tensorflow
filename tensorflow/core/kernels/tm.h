@@ -56,6 +56,7 @@
 
 #  include <immintrin.h>
 #  include <rtmintrin.h>
+#  include "tensorflow/core/platform/mutex.h"
 
 # define CACHE_LINE_SIZE 64
 
@@ -98,49 +99,72 @@ extern __thread int local_thread_id;
         printf("TM commits: %lu\nTotal aborts: %lu\nTotal Lock Commits: %lu\nExplicit Aborts: %lu\nConflict Aborts: %lu\nCapacity Aborts: %lu\n Other Aborts: %lu\n", commits, aborts, commits_with_lock, explicit_aborts, conflict_aborts, capacity_aborts, other_aborts); \
 }
 
-#  define TM_THREAD_ENTER()
-#  define TM_THREAD_EXIT()
+# define TM_THREAD_ENTER()
+# define TM_THREAD_EXIT()
 
-# define IS_LOCKED(lock)        *((volatile int*)(&lock)) != 0
+# define IS_LOCKED(mutex)        mutex->is_locked()
 
+# define RETRY_POLICY 5
+# define HTM_RETRIES 5
 # define SPEND_BUDGET(b)    if(RETRY_POLICY == 0) (*b)=0; else if (RETRY_POLICY == 2) (*b)=(*b)/2; else (*b)=--(*b);
 
 # define TM_BEGIN(mutex) { \
+	printf("enter tm_begin\n"); \
         while (1) { \
-            while (IS_LOCKED(*mutex)) { \
+            while (IS_LOCKED(mutex)) { \
                 __asm__ ( "pause;"); \
+		printf("a\n"); \
             } \
             unsigned int status = _xbegin(); \
             if (status == _XBEGIN_STARTED) { \
-                if (IS_LOCKED(*mutex)) { \
+                if (IS_LOCKED(mutex)) { \
                     _xabort(30); \
+		    printf("b\n"); \
                 } \
                 break; \
             } \
             else if (status == _XABORT_CAPACITY) { \
                 stats_array[local_thread_id].capacity_aborts++;\
                 SPEND_BUDGET(&htm_budget); \
+                printf("c\n"); \
             } else \
-        { \
+            { \
                 if (status & _XABORT_CONFLICT) {\
                         stats_array[local_thread_id].conflict_aborts++;\
+                         printf("d\n"); \
                 }\
                 else if (status & _XABORT_EXPLICIT) {\
                         stats_array[local_thread_id].explicit_aborts++;\
+                        printf("e\n"); \
+                }\
+                else if (status & _XABORT_NESTED) {\
+                        printf("nested abort\n"); \
+                        stats_array[local_thread_id].other_aborts++;\
+                }\
+                else if (status & _XABORT_DEBUG) {\
+                        printf("debug abort\n"); \
+                        stats_array[local_thread_id].other_aborts++;\
+                }\
+                else if (status & _XABORT_RETRY) {\
+                        printf("retry abort\n"); \
+                        stats_array[local_thread_id].other_aborts++;\
                 }\
                 else {\
                         stats_array[local_thread_id].other_aborts++;\
+                        printf("other abort code..\n"); \
                 }\
                 htm_budget--; \
             } \
             stats_array[local_thread_id].aborts++; \
             if (htm_budget <= 0) {   \
-                while (::pthread_mutex_lock(mutex) != 0) { \
-                        __asm__ ("pause;"); \
-                } \
-                break; \
+                printf("g\n"); \
+		while(!mutex->try_lock()){ \
+                     printf("Pause try lock\n"); \
+                     __asm__ ("pause;"); \
+		} \
             } \
         } \
+	printf("exit tm_begin\n"); \
 };
 
 
@@ -149,7 +173,7 @@ extern __thread int local_thread_id;
         _xend(); \
         stats_array[local_thread_id].commits++; \
     } else {    \
-        ::pthread_mutex_unlock(mutex); \
+        mutex->unlock(); \
         stats_array[local_thread_id].commits_with_lock++; \
     } \
 };
