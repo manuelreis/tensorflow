@@ -68,6 +68,9 @@ typedef struct padded_statistics {
     unsigned long conflict_aborts;
     unsigned long capacity_aborts;
     unsigned long other_aborts;
+    unsigned long nested_aborts;
+    unsigned long debug_aborts;
+    unsigned long retry_aborts;
     char suffixPadding[CACHE_LINE_SIZE];
 } __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t;
 
@@ -85,6 +88,9 @@ extern __thread int local_thread_id;
         unsigned long conflict_aborts = 0; \
         unsigned long capacity_aborts = 0; \
         unsigned long other_aborts = 0; \
+	unsigned long nested_aborts = 0; \
+	unsigned long debug_aborts = 0; \
+	unsigned long retry_aborts = 0; \
         int i = 0; \
         for (; i < 80; i++) { \
             if (stats_array[i].commits + stats_array[i].commits_with_lock == 0) { break; } \
@@ -95,8 +101,11 @@ extern __thread int local_thread_id;
                 conflict_aborts += stats_array[i].conflict_aborts; \
                 capacity_aborts += stats_array[i].capacity_aborts; \
                 other_aborts += stats_array[i].other_aborts; \
+		nested_aborts += stats_array[i].nested_aborts; \
+  		debug_aborts += stats_array[i].debug_aborts; \
+		retry_aborts += stats_array[i].retry_aborts; \
             } \
-        printf("TM commits: %lu\nTotal aborts: %lu\nTotal Lock Commits: %lu\nExplicit Aborts: %lu\nConflict Aborts: %lu\nCapacity Aborts: %lu\n Other Aborts: %lu\n", commits, aborts, commits_with_lock, explicit_aborts, conflict_aborts, capacity_aborts, other_aborts); \
+        printf("TM commits: %lu\nTotal aborts: %lu\nTotal Lock Commits: %lu\nExplicit Aborts: %lu\nConflict Aborts: %lu\nCapacity Aborts: %lu\nOther Aborts: %lu\nNested Aborts: %lu\nDebug Aborts: %lu\nRetry Aborts: %lu\n", commits, aborts, commits_with_lock, explicit_aborts, conflict_aborts, capacity_aborts, other_aborts, nested_aborts, debug_aborts, retry_aborts); \
 }
 
 # define TM_THREAD_ENTER()
@@ -132,13 +141,13 @@ extern __thread int local_thread_id;
                         stats_array[local_thread_id].explicit_aborts++;\
                 }\
                 else if (status & _XABORT_NESTED) {\
-                        stats_array[local_thread_id].other_aborts++;\
+                        stats_array[local_thread_id].nested_aborts++;\
                 }\
                 else if (status & _XABORT_DEBUG) {\
-                        stats_array[local_thread_id].other_aborts++;\
+                        stats_array[local_thread_id].debug_aborts++;\
                 }\
                 else if (status & _XABORT_RETRY) {\
-                        stats_array[local_thread_id].other_aborts++;\
+                        stats_array[local_thread_id].retry_aborts++;\
                 }\
                 else {\
                         stats_array[local_thread_id].other_aborts++;\
