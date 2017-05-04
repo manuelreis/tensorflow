@@ -1519,6 +1519,7 @@ cc_inc_library(
 tf_kernel_library(
     name = "resource_variable_ops",
     srcs = ["resource_variable_ops.cc"],
+    copts = ["-mrtm"],
     deps = [
         "htm",
         ":bounds_check",
