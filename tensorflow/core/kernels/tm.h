@@ -109,62 +109,48 @@ extern __thread int local_thread_id;
 # define SPEND_BUDGET(b)    if(RETRY_POLICY == 0) (*b)=0; else if (RETRY_POLICY == 2) (*b)=(*b)/2; else (*b)=--(*b);
 
 # define TM_BEGIN(mutex) { \
-	printf("enter tm_begin\n"); \
         while (1) { \
             while (IS_LOCKED(mutex)) { \
                 __asm__ ( "pause;"); \
-		printf("a\n"); \
             } \
             unsigned int status = _xbegin(); \
             if (status == _XBEGIN_STARTED) { \
                 if (IS_LOCKED(mutex)) { \
                     _xabort(30); \
-		    printf("b\n"); \
                 } \
                 break; \
             } \
             else if (status == _XABORT_CAPACITY) { \
                 stats_array[local_thread_id].capacity_aborts++;\
                 SPEND_BUDGET(&htm_budget); \
-                printf("c\n"); \
             } else \
             { \
                 if (status & _XABORT_CONFLICT) {\
                         stats_array[local_thread_id].conflict_aborts++;\
-                         printf("d\n"); \
                 }\
                 else if (status & _XABORT_EXPLICIT) {\
                         stats_array[local_thread_id].explicit_aborts++;\
-                        printf("e\n"); \
                 }\
                 else if (status & _XABORT_NESTED) {\
-                        printf("nested abort\n"); \
                         stats_array[local_thread_id].other_aborts++;\
                 }\
                 else if (status & _XABORT_DEBUG) {\
-                        printf("debug abort\n"); \
                         stats_array[local_thread_id].other_aborts++;\
                 }\
                 else if (status & _XABORT_RETRY) {\
-                        printf("retry abort\n"); \
                         stats_array[local_thread_id].other_aborts++;\
                 }\
                 else {\
                         stats_array[local_thread_id].other_aborts++;\
-                        printf("other abort code..\n"); \
                 }\
                 htm_budget--; \
             } \
             stats_array[local_thread_id].aborts++; \
             if (htm_budget <= 0) {   \
-                printf("g\n"); \
-		while(!mutex->try_lock()){ \
-                     printf("Pause try lock\n"); \
-                     __asm__ ("pause;"); \
-		} \
+		mutex->lock(); \
+		break; \
             } \
         } \
-	printf("exit tm_begin\n"); \
 };
 
 
