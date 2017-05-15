@@ -75,7 +75,7 @@ typedef struct padded_statistics {
 } __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t;
 
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[];
-
+extern __thread int htm_budget;
 
 extern __thread int local_thread_id;
 
