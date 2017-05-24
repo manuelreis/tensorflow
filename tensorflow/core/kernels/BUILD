@@ -3290,6 +3290,7 @@ STATE_DEPS = [
     "//tensorflow/core:framework",
     "//tensorflow/core:lib",
     "//tensorflow/core:state_ops_op_lib",
+    "htm"
 ]
 
 tf_kernel_library(
@@ -3313,6 +3314,7 @@ tf_kernel_library(
 tf_kernel_library(
     name = "scatter_nd_op",
     prefix = "scatter_nd_op",
+    copts = ["-mrtm"],
     deps = STATE_DEPS,
 )
 

@@ -27,6 +27,8 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/util/util.h"
 
+#include "tm.h"
+
 namespace tensorflow {
 
 typedef Eigen::ThreadPoolDevice CPUDevice;
@@ -268,6 +270,10 @@ class ScatterNdUpdateOp : public OpKernel {
         {params_shape.num_elements() / slice_size, slice_size});
     Index bad_i = -1;
     c->forward_ref_input_to_ref_output(0, 0);
+    
+    htm_budget = HTM_RETRIES;
+    mutex *mutex = c->input_ref_mutex(0);
+    TM_BEGIN(mutex)
 
     switch (slice_dim) {
 #define PARAMS_CASE(IXDIM)                                                  \
@@ -296,6 +302,9 @@ class ScatterNdUpdateOp : public OpKernel {
                         "are currently supported.  Requested rank: ",
                         slice_dim));
     }
+    
+    TM_END(mutex);
+
     OP_REQUIRES(
         c, bad_i < 0,
         errors::InvalidArgument(
