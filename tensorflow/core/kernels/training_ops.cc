@@ -22,8 +22,6 @@ limitations under the License.
 #include "tensorflow/core/kernels/bounds_check.h"
 #include "tensorflow/core/kernels/variable_ops.h"
 
-#include "tm.h"
-
 namespace tensorflow {
 
 using CPUDevice = Eigen::ThreadPoolDevice;
@@ -379,7 +377,7 @@ class ApplyGradientDescentOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* ctx) override {
-    //auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0});
+    auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0});
     Tensor var;
     OP_REQUIRES_OK(ctx, GetInputTensor(ctx, 0, use_exclusive_lock_, &var));
 
@@ -399,15 +397,9 @@ class ApplyGradientDescentOp : public OpKernel {
                                 delta.shape().DebugString()));
 
     const Device& device = ctx->template eigen_device<Device>();
-    
-    htm_budget = HTM_RETRIES;
-   
-    mutex *mutex = GetMutex(ctx, 0);
-
-    TM_BEGIN(mutex);
     functor::ApplyGradientDescent<Device, T>()(
         device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
-    TM_END(mutex);
+
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
 

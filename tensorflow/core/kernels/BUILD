@@ -3428,9 +3428,7 @@ tf_kernel_library(
 tf_kernel_library(
     name = "training_ops",
     prefix = "training_ops",
-    copts = ["-mrtm"],
     deps = [
-        "htm",
         ":bounds_check",
         ":variable_ops",
         "//tensorflow/core:framework",
