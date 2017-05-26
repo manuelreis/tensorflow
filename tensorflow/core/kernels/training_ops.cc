@@ -22,6 +22,9 @@ limitations under the License.
 #include "tensorflow/core/kernels/bounds_check.h"
 #include "tensorflow/core/kernels/variable_ops.h"
 
+#include <iostream>
+
+
 namespace tensorflow {
 
 using CPUDevice = Eigen::ThreadPoolDevice;
@@ -44,6 +47,20 @@ struct ApplyGradientDescent<CPUDevice, T> {
                   typename TTypes<T>::ConstScalar lr,
                   typename TTypes<T>::ConstFlat grad) {
     var.device(d) -= grad * lr();
+    
+    std::cout << "BEGIN" << std::endl;
+    std::cout << "grad total size: " << grad.size() << std::endl;
+    
+    unsigned long number_cells_eq_zero = 0;
+    for(int i = 0; i < grad.size(); i++) {
+        double value = grad(i);
+        if(value == 0) {
+            number_cells_eq_zero++;
+        }
+    }
+
+    std::cout << "grad total num zeros: " << number_cells_eq_zero << std::endl;
+    std::cout << "END" << std::endl;
   }
 };
 
