@@ -48,19 +48,29 @@ struct ApplyGradientDescent<CPUDevice, T> {
                   typename TTypes<T>::ConstFlat grad) {
     var.device(d) -= grad * lr();
     
-    std::cout << "BEGIN" << std::endl;
-    std::cout << "grad total size: " << grad.size() << std::endl;
+//    std::cout << "BEGIN" << std::endl;
+//    std::cout << "grad total size: " << grad.size() << std::endl;
     
     unsigned long number_cells_eq_zero = 0;
+    unsigned long number_zero_clusters = 0;
+    bool in_cluster = false;
     for(int i = 0; i < grad.size(); i++) {
         double value = grad(i);
         if(value == 0) {
             number_cells_eq_zero++;
+            in_cluster = true;
+        } else {
+            if(in_cluster) {
+                number_zero_clusters++;
+            }
+            in_cluster = false;
         }
     }
 
-    std::cout << "grad total num zeros: " << number_cells_eq_zero << std::endl;
-    std::cout << "END" << std::endl;
+      std::cout << "{'num_cells': " << grad.size() << ", 'num_zeros': " << number_cells_eq_zero << ", 'num_zero_clusters': " << number_zero_clusters << "}" << std::endl;
+//    std::cout << "grad total num zeros: " << number_cells_eq_zero << std::endl;
+//    std::cout << "number zero clusters:  " << number_zero_clusters<< std::endl;
+//    std::cout << "END" << std::endl;
   }
 };
 
