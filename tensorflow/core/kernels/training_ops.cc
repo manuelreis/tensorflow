@@ -21,6 +21,8 @@ limitations under the License.
 #include "tensorflow/core/framework/register_types.h"
 #include "tensorflow/core/kernels/bounds_check.h"
 #include "tensorflow/core/kernels/variable_ops.h"
+#include <Eigen/Sparse>
+#include <unsupported/Eigen/CXX11/Tensor>
 
 #include "tm.h"
 
@@ -404,22 +406,38 @@ class ApplyGradientDescentOp : public OpKernel {
    
     mutex *mutex = GetMutex(ctx, 0);
 
-    TM_BEGIN(mutex);
 
     //functor::ApplyGradientDescent<Device, T>()(
     //    device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
-   
-    auto var_eigen = var.flat<T>();
-    auto grad_eigen = var.flat<T>();
-    auto alpha_eigen = var.scalar<T>();
+  
 
-    //var_eigen.device(d) -= grad_eigen * alpha_eigen();
-    auto temp_var = grad_eigen * alpha_eigen();
-    for(int i = 0; i < grad_eigen.size(); i++) {
-        if( ((double) temp_var(i)) != 0) {
-            var_eigen.device(d)(i) -= grad_eigen(i);    
-        }
-    }
+    
+    T *var_ptr = (T*) var.buf_->data();
+    T *delta_ptr = (T*) delta.buf_->data();
+    T *alpha_ptr = (T*) alpha.buf_->data();
+
+    std::cout << "The alpha is: " << alpha_ptr[0] << std::endl;
+
+
+
+     auto grad_eigen = delta.flat<T>();
+     int size_grad = grad_eigen.size();
+
+     
+
+     T* temp_var = (T*) std::malloc(sizeof(T) * size_grad);
+     for(int i = 0; i < size_grad; i++) {
+        temp_var[i] = var_ptr[i] - delta_ptr[i] * alpha_ptr[0];
+     }
+
+
+     TM_BEGIN(mutex);
+
+     for(int i = 0; i < grad_eigen.size(); i++) {
+         if( ((float) temp_var[i])  != 0) {
+             var_ptr[i] = temp_var[i];    
+         }
+     }
 
     TM_END(mutex);
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
