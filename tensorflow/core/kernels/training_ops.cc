@@ -406,30 +406,10 @@ class ApplyGradientDescentOp : public OpKernel {
    
     mutex *mutex = GetMutex(ctx, 0);
 
-    //functor::ApplyGradientDescent<Device, T>()(
-    //    device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
-    
-    T *var_ptr   = (T*)   var.buf_->data();
-    T *delta_ptr = (T*) delta.buf_->data();
-    T *alpha_ptr = (T*) alpha.buf_->data();
-
-    auto grad_eigen = delta.flat<T>();
-    int size_grad = grad_eigen.size();
-    
-    if(temp_var_ == nullptr) {
-       temp_var_ = (T*) std::malloc(sizeof(T) * size_grad);
-    }
-    for(int i = 0; i < size_grad; i++) {
-       temp_var_[i] = var_ptr[i] - delta_ptr[i] * alpha_ptr[0];
-    }
-
     TM_BEGIN(mutex);
 
-    for(int i = 0; i < size_grad; i++) {
-        if( ((float) temp_var_[i]) != 0) {
-           var_ptr[i] = temp_var_[i];    
-        }
-    }
+    functor::ApplyGradientDescent<Device, T>()(
+        device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
 
     TM_END(mutex);
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
