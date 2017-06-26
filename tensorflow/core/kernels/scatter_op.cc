@@ -23,6 +23,8 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/util/util.h"
 
+#include "tm.h"
+
 namespace tensorflow {
 
 typedef Eigen::ThreadPoolDevice CPUDevice;
@@ -79,8 +81,12 @@ class ScatterUpdateOp : public OpKernel {
   void Compute(OpKernelContext* c) override {
     if (use_exclusive_lock_) {
       // Hold mutex while we apply updates
-      mutex_lock l(*c->input_ref_mutex(0));
+      //mutex_lock l(*c->input_ref_mutex(0));
+      htm_budget = HTM_RETRIES;
+      mutex *mutex = c->input_ref_mutex(0);
+      TM_BEGIN(mutex);
       DoCompute(c);
+      TM_END(mutex);
     } else {
       DoCompute(c);
     }
