@@ -40,7 +40,6 @@ namespace {
 
 class StdThread : public Thread {
  public:
-  // name and thread_options are both ignored.
   StdThread(const ThreadOptions& thread_options, const string& name,
             std::function<void()> fn)
       : thread_(fn) {}
