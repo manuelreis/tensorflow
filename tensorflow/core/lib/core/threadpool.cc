@@ -28,6 +28,9 @@ limitations under the License.
 #include <sched.h>
 #include "tensorflow/core/platform/cpu_info.h"
 
+// (dleoni) The local thread unique identifier
+__thread unsigned local_thread_id(0);
+
 namespace tensorflow {
 namespace thread {
 
@@ -47,15 +50,18 @@ struct EigenEnvironment {
   const string name_;
   // (dleoni) Set two counters to determine the core whom the next thread
   // for both the intra and the inter parallelism pools will be pinned to
+  // The main process is the only one that increments those variables when
+  // it creates the two pools, so we don't need any synchronization
   unsigned intra_pool_next_core_;
   unsigned inter_pool_next_core_;
+  
 
   EigenEnvironment(Env* env, const ThreadOptions& thread_options,
                    const string& name)
       : env_(env), thread_options_(thread_options), name_(name), intra_pool_next_core_(0), inter_pool_next_core_(std::thread::hardware_concurrency()-1) {}
 
   EnvThread* CreateThread(std::function<void()> f) {
-    return env_->StartThread(thread_options_, name_, [=]() {
+    return env_->StartThread(thread_options_, name_, [=, &local_thread_id]() {
       unsigned core = 0;
       unsigned num_cores = std::thread::hardware_concurrency();
       // Set the processor flag to flush denormals to zero.
@@ -87,6 +93,10 @@ struct EigenEnvironment {
       if (ret != 0) {
         VLOG(WARNING) << "sched_setaffinity";
       }
+      // (dleoni) Set the local thread identifier to the index of the core it
+      // is pinned to; this is used to capture statistics about the transactions
+      // performed by this thread 
+      local_thread_id = core;
       f();
     });
   }

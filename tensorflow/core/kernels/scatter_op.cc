@@ -25,6 +25,10 @@ limitations under the License.
 
 #include "tm.h"
 
+// (dleoni) include chrono library to measure time of execution of the transactions
+#  include <chrono>
+#  include <ratio>
+
 namespace tensorflow {
 
 typedef Eigen::ThreadPoolDevice CPUDevice;
@@ -84,9 +88,19 @@ class ScatterUpdateOp : public OpKernel {
       //mutex_lock l(*c->input_ref_mutex(0));
       htm_budget = HTM_RETRIES;
       mutex *mutex = c->input_ref_mutex(0);
-      TM_BEGIN(mutex);
+      
+      // (dleoni) track how long it takes to complete the transaction
+      auto transaction_start_time = std::chrono::system_clock::now();
+
+     // (dleoni) index of this transaction within statistics matrix is 1
+      
+      TM_BEGIN(mutex, 1);
       DoCompute(c);
-      TM_END(mutex);
+
+      // (dleoni) pass the time of the start of the transaction in order
+      // to calculate its duration
+
+      TM_END(mutex, 1, transaction_start_time);
     } else {
       DoCompute(c);
     }

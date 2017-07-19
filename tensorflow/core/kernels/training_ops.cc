@@ -25,6 +25,9 @@ limitations under the License.
 #include <unsupported/Eigen/CXX11/Tensor>
 
 #include "tm.h"
+// (dleoni) include chrono library to measure time of execution of the transactions
+#  include <chrono>
+#  include <ratio>
 
 namespace tensorflow {
 
@@ -406,12 +409,20 @@ class ApplyGradientDescentOp : public OpKernel {
    
     mutex *mutex = GetMutex(ctx, 0);
 
-    TM_BEGIN(mutex);
+    // (dleoni) the system clock time when the transaction starts
+    auto transaction_start_time = std::chrono::system_clock::now();
+
+    // (dleoni) index of this transaction within statistics matrix is 0
+
+    TM_BEGIN(mutex, 0);
 
     functor::ApplyGradientDescent<Device, T>()(
         device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
 
-    TM_END(mutex);
+    // (dleoni) pass the time of the start of the transaction in order
+    // to calculate its duration
+
+    TM_END(mutex, 0, transaction_start_time);
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
 

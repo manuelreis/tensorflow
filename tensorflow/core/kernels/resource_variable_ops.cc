@@ -32,10 +32,16 @@ limitations under the License.
 
 #include "tm.h"
 
-__thread int local_thread_id;
+// (dleoni) "local_thread_id" is a thread identifier used to store statistics of the transactions
+// completed by each thread
+extern __thread unsigned int local_thread_id;
 __thread int htm_budget;
-__attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
 
+// (dleoni) Keep two separate arrays for the statistics of the two transactions:
+// 1 - training_op
+// 2 - scatter_op
+
+__attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[2][80];
 
 namespace tensorflow {
 

@@ -71,41 +71,111 @@ typedef struct padded_statistics {
     unsigned long nested_aborts;
     unsigned long debug_aborts;
     unsigned long retry_aborts;
+    unsigned long number_of_transactions;
+    float total_transactions_time;
+    float minimum_transaction_time;
+    float maximum_transaction_time;
     char suffixPadding[CACHE_LINE_SIZE];
 } __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t;
 
-extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[];
+extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[2][80];
 extern __thread int htm_budget;
 
-extern __thread int local_thread_id;
+// (dleoni) The local thread unique identifier; used to track the 
+// per-thread statistics about transactions
+extern __thread unsigned local_thread_id;
 
 #  define TM_STARTUP(numThread, bId)
 #  define TM_SHUTDOWN() { \
-        unsigned long commits = 0; \
-        unsigned long aborts = 0; \
-        unsigned long commits_with_lock = 0; \
-        unsigned long explicit_aborts = 0; \
-        unsigned long conflict_aborts = 0; \
-        unsigned long capacity_aborts = 0; \
-        unsigned long other_aborts = 0; \
-	unsigned long nested_aborts = 0; \
-	unsigned long debug_aborts = 0; \
-	unsigned long retry_aborts = 0; \
-        int i = 0; \
-        for (; i < 80; i++) { \
-            if (stats_array[i].commits + stats_array[i].commits_with_lock == 0) { break; } \
-                commits += stats_array[i].commits; \
-                aborts += stats_array[i].aborts; \
-                commits_with_lock += stats_array[i].commits_with_lock; \
-                explicit_aborts += stats_array[i].explicit_aborts; \
-                conflict_aborts += stats_array[i].conflict_aborts; \
-                capacity_aborts += stats_array[i].capacity_aborts; \
-                other_aborts += stats_array[i].other_aborts; \
-		nested_aborts += stats_array[i].nested_aborts; \
-  		debug_aborts += stats_array[i].debug_aborts; \
-		retry_aborts += stats_array[i].retry_aborts; \
-            } \
-        printf("TM commits: %lu\nTotal aborts: %lu\nTotal Lock Commits: %lu\nExplicit Aborts: %lu\nConflict Aborts: %lu\nCapacity Aborts: %lu\nOther Aborts: %lu\nNested Aborts: %lu\nDebug Aborts: %lu\nRetry Aborts: %lu\n", commits, aborts, commits_with_lock, explicit_aborts, conflict_aborts, capacity_aborts, other_aborts, nested_aborts, debug_aborts, retry_aborts); \
+	int j= 0; \
+	float absolute_minimum_transaction_duration = 0.0f; \
+	float absolute_maximum_transaction_duration = 0.0f; \
+	float absolute_average_transaction_duration = 0.0f; \
+	unsigned long absolute_commits = 0; \
+	unsigned long absolute_aborts = 0; \
+	unsigned long absolute_commits_with_lock = 0; \
+	unsigned long absolute_explicit_aborts = 0; \
+	unsigned long absolute_conflict_aborts = 0; \
+	unsigned long absolute_capacity_aborts = 0; \
+	unsigned long absolute_other_aborts = 0; \
+	unsigned long absolute_nested_aborts = 0; \
+	unsigned long absolute_debug_aborts = 0; \
+	unsigned long absolute_retry_aborts = 0; \
+	int actual_transactions_type_number = 0; \
+	for (; j < 2; j++) { \
+	        unsigned long commits = 0; \
+        	unsigned long aborts = 0; \
+        	unsigned long commits_with_lock = 0; \
+        	unsigned long explicit_aborts = 0; \
+        	unsigned long conflict_aborts = 0; \
+        	unsigned long capacity_aborts = 0; \
+        	unsigned long other_aborts = 0; \
+		unsigned long nested_aborts = 0; \
+		unsigned long debug_aborts = 0; \
+		unsigned long retry_aborts = 0; \
+		float minimum_transaction_duration = 0.0f; \
+		float maximum_transaction_duration = 0.0f; \
+		float total_average_transaction_time = 0.0f; \
+		float average_transaction_duration = 0.0f; \
+       		int i = 0; \
+		int threads_count = 0; \
+        	for (; i < 80; i++) { \
+            		if (stats_array[j][i].commits + stats_array[j][i].commits_with_lock == 0) { continue; } \
+                	commits += stats_array[j][i].commits; \
+                	aborts += stats_array[j][i].aborts; \
+                	commits_with_lock += stats_array[j][i].commits_with_lock; \
+                	explicit_aborts += stats_array[j][i].explicit_aborts; \
+                	conflict_aborts += stats_array[j][i].conflict_aborts; \
+                	capacity_aborts += stats_array[j][i].capacity_aborts; \
+                	other_aborts += stats_array[j][i].other_aborts; \
+			nested_aborts += stats_array[j][i].nested_aborts; \
+  			debug_aborts += stats_array[j][i].debug_aborts; \
+			retry_aborts += stats_array[j][i].retry_aborts; \
+			float average_transaction_time = stats_array[j][i].total_transactions_time / stats_array[j][i].number_of_transactions; \
+			total_average_transaction_time += average_transaction_time; \
+			if ((minimum_transaction_duration == 0.0f) || (stats_array[j][i].minimum_transaction_time < minimum_transaction_duration)) { \
+				minimum_transaction_duration = stats_array[j][i].minimum_transaction_time; \
+			} \
+			if (stats_array[j][i].maximum_transaction_time > maximum_transaction_duration) { \
+				maximum_transaction_duration = stats_array[j][i].maximum_transaction_time; \
+			} \
+			threads_count++; \
+            	} \
+		if (threads_count) { \
+			average_transaction_duration = (total_average_transaction_time / threads_count); \
+			absolute_average_transaction_duration += average_transaction_duration; \
+			if ((absolute_minimum_transaction_duration == 0.0f) || (minimum_transaction_duration < absolute_minimum_transaction_duration)) { \
+				absolute_minimum_transaction_duration = minimum_transaction_duration; \
+			} \
+			if (maximum_transaction_duration > absolute_maximum_transaction_duration) { \
+				absolute_maximum_transaction_duration = maximum_transaction_duration; \
+			} \
+			actual_transactions_type_number++; \
+		} \
+		/*if (j == 0) { \
+                       	printf("\nTM statistics for the transactions in training_ops.cc\n"); \
+                } \
+                else { \
+                       	printf("\nTM statistics for the transactions in scatter_op.cc\n"); \
+                } */\
+	        printf("TM commits: %lu\nTotal aborts: %lu\nTotal Lock Commits: %lu\nExplicit Aborts: %lu\nConflict Aborts: %lu\nCapacity Aborts: %lu\nOther Aborts: %lu\nNested Aborts: %lu\nDebug Aborts: %lu\nRetry Aborts: %lu\n", commits, aborts, commits_with_lock, explicit_aborts, conflict_aborts, capacity_aborts, other_aborts, nested_aborts, debug_aborts, retry_aborts); \
+		printf("Average transaction duration(ms): %f\nMinimum transaction duration(ms): %f\nMaximum transaction duration(ms): %f", average_transaction_duration, minimum_transaction_duration, maximum_transaction_duration); \
+		printf("|"); \
+		absolute_commits += commits; \
+                absolute_aborts += aborts; \
+                absolute_commits_with_lock += commits_with_lock; \
+                absolute_explicit_aborts += explicit_aborts; \
+                absolute_conflict_aborts += conflict_aborts; \
+                absolute_capacity_aborts += capacity_aborts; \
+                absolute_other_aborts += other_aborts; \
+		absolute_nested_aborts += nested_aborts; \
+                absolute_debug_aborts += debug_aborts; \
+                absolute_retry_aborts += retry_aborts; \
+	} \
+	absolute_average_transaction_duration = (absolute_average_transaction_duration / actual_transactions_type_number); \
+	/*printf("Aggregate TM statistics of different types of transactions\n"); */\
+	printf("TM commits: %lu\nTotal aborts: %lu\nTotal Lock Commits: %lu\nExplicit Aborts: %lu\nConflict Aborts: %lu\nCapacity Aborts: %lu\nOther Aborts: %lu\nNested Aborts: %lu\nDebug Aborts: %lu\nRetry Aborts: %lu\n", absolute_commits, absolute_aborts, absolute_commits_with_lock, absolute_explicit_aborts, absolute_conflict_aborts, absolute_capacity_aborts, absolute_other_aborts, absolute_nested_aborts, absolute_debug_aborts, absolute_retry_aborts); \
+	printf("Average transaction duration(ms): %f\nMinimum transaction duration(ms): %f\nMaximum transaction duration(ms): %f", absolute_average_transaction_duration, absolute_minimum_transaction_duration, absolute_maximum_transaction_duration); \
 }
 
 # define TM_THREAD_ENTER()
@@ -117,7 +187,7 @@ extern __thread int local_thread_id;
 # define HTM_RETRIES 5
 # define SPEND_BUDGET(b)    if(RETRY_POLICY == 0) (*b)=0; else if (RETRY_POLICY == 2) (*b)=(*b)/2; else (*b)=--(*b);
 
-# define TM_BEGIN(mutex) { \
+# define TM_BEGIN(mutex, transaction) { \
         while (1) { \
             while (IS_LOCKED(mutex)) { \
                 __asm__ ( "pause;"); \
@@ -130,31 +200,31 @@ extern __thread int local_thread_id;
                 break; \
             } \
             else if (status == _XABORT_CAPACITY) { \
-                stats_array[local_thread_id].capacity_aborts++;\
+                stats_array[transaction][local_thread_id].capacity_aborts++;\
                 SPEND_BUDGET(&htm_budget); \
             } else \
             { \
                 if (status & _XABORT_CONFLICT) {\
-                        stats_array[local_thread_id].conflict_aborts++;\
+                        stats_array[transaction][local_thread_id].conflict_aborts++;\
                 }\
                 else if (status & _XABORT_EXPLICIT) {\
-                        stats_array[local_thread_id].explicit_aborts++;\
+                        stats_array[transaction][local_thread_id].explicit_aborts++;\
                 }\
                 else if (status & _XABORT_NESTED) {\
-                        stats_array[local_thread_id].nested_aborts++;\
+                        stats_array[transaction][local_thread_id].nested_aborts++;\
                 }\
                 else if (status & _XABORT_DEBUG) {\
-                        stats_array[local_thread_id].debug_aborts++;\
+                        stats_array[transaction][local_thread_id].debug_aborts++;\
                 }\
                 else if (status & _XABORT_RETRY) {\
-                        stats_array[local_thread_id].retry_aborts++;\
+                        stats_array[transaction][local_thread_id].retry_aborts++;\
                 }\
                 else {\
-                        stats_array[local_thread_id].other_aborts++;\
+                        stats_array[transaction][local_thread_id].other_aborts++;\
                 }\
                 htm_budget--; \
             } \
-            stats_array[local_thread_id].aborts++; \
+            stats_array[transaction][local_thread_id].aborts++; \
             if (htm_budget <= 0) {   \
 		mutex->lock(); \
 		break; \
@@ -163,14 +233,24 @@ extern __thread int local_thread_id;
 };
 
 
-# define TM_END(mutex){ \
+# define TM_END(mutex, transaction, transaction_start_time){ \
     if (htm_budget > 0) { \
         _xend(); \
-        stats_array[local_thread_id].commits++; \
+        stats_array[transaction][local_thread_id].commits++; \
     } else {    \
         mutex->unlock(); \
-        stats_array[local_thread_id].commits_with_lock++; \
+        stats_array[transaction][local_thread_id].commits_with_lock++; \
     } \
+    auto transaction_end_time = std::chrono::system_clock::now(); \
+    float transaction_duration = std::chrono::duration<float , std::milli>(transaction_end_time - transaction_start_time).count(); \
+    stats_array[transaction][local_thread_id].total_transactions_time += transaction_duration; \
+    stats_array[transaction][local_thread_id].number_of_transactions++; \
+     if ((stats_array[transaction][local_thread_id].minimum_transaction_time == 0.0f) || (transaction_duration < stats_array[transaction][local_thread_id].minimum_transaction_time)) { \
+         stats_array[transaction][local_thread_id].minimum_transaction_time = transaction_duration; \
+     } \
+     if (transaction_duration > stats_array[transaction][local_thread_id].maximum_transaction_time) { \
+         stats_array[transaction][local_thread_id].maximum_transaction_time = transaction_duration; \
+     } \
 };
 
 #    define TM_BEGIN_RO()                 TM_BEGIN(0)
@@ -200,3 +280,4 @@ extern __thread int local_thread_id;
 
 
 #endif
+
