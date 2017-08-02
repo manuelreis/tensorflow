@@ -92,7 +92,7 @@ class ScatterUpdateOp : public OpKernel {
       // (dleoni) track how long it takes to complete the transaction
       auto transaction_start_time = std::chrono::system_clock::now();
 
-     // (dleoni) index of this transaction within statistics matrix is 1
+      // (dleoni) index of this transaction within statistics matrix is 1
       
       TM_BEGIN(mutex, 1);
       DoCompute(c);

@@ -72,13 +72,19 @@ typedef struct padded_statistics {
     unsigned long debug_aborts;
     unsigned long retry_aborts;
     unsigned long number_of_transactions;
+    unsigned long number_of_operations;
     float total_transactions_time;
     float minimum_transaction_time;
     float maximum_transaction_time;
+    float total_operations_time;
     char suffixPadding[CACHE_LINE_SIZE];
 } __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t;
 
+// (dleoni) The matrix containing statistics about transactions and operations with:
+// - one row for each transaction type
+// - one column for each thread
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[2][80];
+
 extern __thread int htm_budget;
 
 // (dleoni) The local thread unique identifier; used to track the 
@@ -91,6 +97,8 @@ extern __thread unsigned local_thread_id;
 	float absolute_minimum_transaction_duration = 0.0f; \
 	float absolute_maximum_transaction_duration = 0.0f; \
 	float absolute_average_transaction_duration = 0.0f; \
+	float absolute_average_operation_duration = 0.0f; \
+	float absolute_maximum_operation_duration = 0.0f; \
 	unsigned long absolute_commits = 0; \
 	unsigned long absolute_aborts = 0; \
 	unsigned long absolute_commits_with_lock = 0; \
@@ -115,8 +123,11 @@ extern __thread unsigned local_thread_id;
 		unsigned long retry_aborts = 0; \
 		float minimum_transaction_duration = 0.0f; \
 		float maximum_transaction_duration = 0.0f; \
+		float maximum_operation_duration = 0.0f; \
 		float total_average_transaction_time = 0.0f; \
+		float total_average_operation_time = 0.0f; \
 		float average_transaction_duration = 0.0f; \
+		float average_operation_duration = 0.0f; \
        		int i = 0; \
 		int threads_count = 0; \
         	for (; i < 80; i++) { \
@@ -132,24 +143,33 @@ extern __thread unsigned local_thread_id;
   			debug_aborts += stats_array[j][i].debug_aborts; \
 			retry_aborts += stats_array[j][i].retry_aborts; \
 			float average_transaction_time = stats_array[j][i].total_transactions_time / stats_array[j][i].number_of_transactions; \
+			float average_operation_time = stats_array[j][i].total_operations_time / stats_array[j][i].number_of_operations; \
 			total_average_transaction_time += average_transaction_time; \
+			total_average_operation_time += average_operation_time; \
 			if ((minimum_transaction_duration == 0.0f) || (stats_array[j][i].minimum_transaction_time < minimum_transaction_duration)) { \
 				minimum_transaction_duration = stats_array[j][i].minimum_transaction_time; \
 			} \
 			if (stats_array[j][i].maximum_transaction_time > maximum_transaction_duration) { \
 				maximum_transaction_duration = stats_array[j][i].maximum_transaction_time; \
 			} \
+			if (stats_array[j][i].total_operations_time > maximum_operation_duration) { \
+				maximum_operation_duration = stats_array[j][i].total_operations_time; \
+			} \
 			threads_count++; \
             	} \
+		/*printf("THREADS_COUNT transaction %d:%d\n",j,threads_count); */ \
 		if (threads_count) { \
 			average_transaction_duration = (total_average_transaction_time / threads_count); \
+			average_operation_duration = (total_average_operation_time / threads_count); \
 			absolute_average_transaction_duration += average_transaction_duration; \
+			absolute_average_operation_duration += average_operation_duration; \
 			if ((absolute_minimum_transaction_duration == 0.0f) || (minimum_transaction_duration < absolute_minimum_transaction_duration)) { \
 				absolute_minimum_transaction_duration = minimum_transaction_duration; \
 			} \
 			if (maximum_transaction_duration > absolute_maximum_transaction_duration) { \
 				absolute_maximum_transaction_duration = maximum_transaction_duration; \
 			} \
+			absolute_maximum_operation_duration += maximum_operation_duration; \
 			actual_transactions_type_number++; \
 		} \
 		/*if (j == 0) { \
@@ -159,7 +179,8 @@ extern __thread unsigned local_thread_id;
                        	printf("\nTM statistics for the transactions in scatter_op.cc\n"); \
                 } */\
 	        printf("TM commits: %lu\nTotal aborts: %lu\nTotal Lock Commits: %lu\nExplicit Aborts: %lu\nConflict Aborts: %lu\nCapacity Aborts: %lu\nOther Aborts: %lu\nNested Aborts: %lu\nDebug Aborts: %lu\nRetry Aborts: %lu\n", commits, aborts, commits_with_lock, explicit_aborts, conflict_aborts, capacity_aborts, other_aborts, nested_aborts, debug_aborts, retry_aborts); \
-		printf("Average transaction duration(ms): %f\nMinimum transaction duration(ms): %f\nMaximum transaction duration(ms): %f", average_transaction_duration, minimum_transaction_duration, maximum_transaction_duration); \
+		printf("Average transaction duration(ms): %f\nMinimum transaction duration(ms): %f\nMaximum transaction duration(ms): %f\n", average_transaction_duration, minimum_transaction_duration, maximum_transaction_duration); \
+		printf("Average operation duration(ms): %f\nMaximum operation duration(ms): %f", average_operation_duration, maximum_operation_duration); \
 		printf("|"); \
 		absolute_commits += commits; \
                 absolute_aborts += aborts; \
@@ -172,10 +193,14 @@ extern __thread unsigned local_thread_id;
                 absolute_debug_aborts += debug_aborts; \
                 absolute_retry_aborts += retry_aborts; \
 	} \
-	absolute_average_transaction_duration = (absolute_average_transaction_duration / actual_transactions_type_number); \
+	if (actual_transactions_type_number > 0) { \
+	        absolute_average_transaction_duration = (absolute_average_transaction_duration / actual_transactions_type_number); \
+	        absolute_average_operation_duration = (absolute_average_operation_duration / actual_transactions_type_number); \
+	} \
 	/*printf("Aggregate TM statistics of different types of transactions\n"); */\
 	printf("TM commits: %lu\nTotal aborts: %lu\nTotal Lock Commits: %lu\nExplicit Aborts: %lu\nConflict Aborts: %lu\nCapacity Aborts: %lu\nOther Aborts: %lu\nNested Aborts: %lu\nDebug Aborts: %lu\nRetry Aborts: %lu\n", absolute_commits, absolute_aborts, absolute_commits_with_lock, absolute_explicit_aborts, absolute_conflict_aborts, absolute_capacity_aborts, absolute_other_aborts, absolute_nested_aborts, absolute_debug_aborts, absolute_retry_aborts); \
-	printf("Average transaction duration(ms): %f\nMinimum transaction duration(ms): %f\nMaximum transaction duration(ms): %f", absolute_average_transaction_duration, absolute_minimum_transaction_duration, absolute_maximum_transaction_duration); \
+	printf("Average transaction duration(ms): %f\nMinimum transaction duration(ms): %f\nMaximum transaction duration(ms): %f\n", absolute_average_transaction_duration, absolute_minimum_transaction_duration, absolute_maximum_transaction_duration); \
+	printf("Average operation duration(ms): %f\nMaximum operation duration(ms): %f", absolute_average_operation_duration, absolute_maximum_operation_duration); \
 }
 
 # define TM_THREAD_ENTER()

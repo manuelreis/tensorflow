@@ -413,7 +413,6 @@ class ApplyGradientDescentOp : public OpKernel {
     auto transaction_start_time = std::chrono::system_clock::now();
 
     // (dleoni) index of this transaction within statistics matrix is 0
-
     TM_BEGIN(mutex, 0);
 
     functor::ApplyGradientDescent<Device, T>()(
