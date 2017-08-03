@@ -23,6 +23,12 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/util/util.h"
 
+#include "updates_stats.h"
+// (dleoni) include chrono library to measure the time needed to acquire the lock in
+// the computation of the updates
+#  include <chrono>
+#  include <ratio>
+
 namespace tensorflow {
 
 typedef Eigen::ThreadPoolDevice CPUDevice;
@@ -78,8 +84,18 @@ class ScatterUpdateOp : public OpKernel {
 
   void Compute(OpKernelContext* c) override {
     if (use_exclusive_lock_) {
+      
+      // (dleoni) the system clock time when we try to acquire the mutex
+      auto acquire_mutex_time = std::chrono::system_clock::now();
+
       // Hold mutex while we apply updates
       mutex_lock l(*c->input_ref_mutex(0));
+
+      // (dleoni) the system clock time when the mutex has been acquired
+      auto mutex_acquired_time = std::chrono::system_clock::now();
+
+      // (dleoni) store the time needed to acquire the mutex
+      stats_array[1][local_thread_id].lock_waiting_time += std::chrono::duration<float , std::milli>(mutex_acquired_time - acquire_mutex_time).count();
       DoCompute(c);
     } else {
       DoCompute(c);

@@ -30,6 +30,18 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/util/util.h"
 
+#include "updates_stats.h"
+
+// (dleoni) "local_thread_id" is a thread identifier used to store statistics of the transactions
+// completed by each thread
+extern __thread unsigned int local_thread_id;
+
+// (dleoni) Keep track of the statistics related two the application of updated for the two transactions:
+// 1 - training_op
+// 2 - scatter_op
+
+__attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[2][80];
+
 namespace tensorflow {
 
 REGISTER_RESOURCE_HANDLE_KERNEL(Var);
@@ -313,6 +325,12 @@ class ResourceGatherOp : public OpKernel {
   explicit ResourceGatherOp(OpKernelConstruction* c) : OpKernel(c) {}
 
   void Compute(OpKernelContext* c) override {
+
+    // (dleoni) Print statistics regarding the application of the updates 
+    // after the computation of the gradients
+
+    print_updates_stats();
+
     Var* v = nullptr;
     OP_REQUIRES_OK(c, LookupResource(c, HandleFromInput(c, 0), &v));
     mutex_lock ml(*v->mu());

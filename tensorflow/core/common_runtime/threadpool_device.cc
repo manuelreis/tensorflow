@@ -28,6 +28,11 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/public/session_options.h"
 
+// (dleoni) include chrono library to measure time of the operations computed by threads in the pool device
+// include update_stats.h to store the statistics about the operations
+#include <chrono> 
+#include "tensorflow/core/kernels/updates_stats.h"
+
 #ifdef INTEL_MKL
 #include "tensorflow/core/common_runtime/mkl_cpu_allocator.h"
 #endif
@@ -53,7 +58,34 @@ void ThreadPoolDevice::Compute(OpKernel* op_kernel, OpKernelContext* context) {
                                          id);
     op_kernel->Compute(context);
   } else {
+
+    // (dleoni) Track the time spent to compute two operations:
+    // 1-ApplyGradientDescent
+    // 2-ScatterSub
+
+    const string& op_name = op_kernel->type_string();
+    if ((!op_name.compare("ApplyGradientDescent")) || (!op_name.compare("ScatterSub"))) {
+      
+      // (dleoni) the system clock time when the operation starts
+      auto op_start_time = std::chrono::system_clock::now();
+
+      op_kernel->Compute(context);
+
+      // (dleoni) the system clock time when the operation ends
+      auto op_end_time = std::chrono::system_clock::now();
+    
+      // (dleoni) store the duration of the operation in its array of per-thread statistics;
+      // also update the counter for number of computations
+      if (!op_name.compare("ApplyGradientDescent")) {
+        stats_array[0][local_thread_id].update_time += std::chrono::duration<float , std::milli>(op_end_time - op_start_time).count();
+	stats_array[0][local_thread_id].number_of_updates++;
+      } else {
+        stats_array[1][local_thread_id].update_time += std::chrono::duration<float , std::milli>(op_end_time - op_start_time).count();
+	stats_array[1][local_thread_id].number_of_updates++;
+      }
+    } else {
     op_kernel->Compute(context);
+    }
   }
 }
 

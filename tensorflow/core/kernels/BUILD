@@ -1511,10 +1511,16 @@ tf_kernel_library(
     ],
 )
 
+cc_inc_library(
+    name = "updates_stats",
+    hdrs = ["updates_stats.h"]
+)
+
 tf_kernel_library(
     name = "resource_variable_ops",
     srcs = ["resource_variable_ops.cc"],
     deps = [
+        ":updates_stats",
         ":bounds_check",
         ":dense_update_ops",
         ":gather_functor",
@@ -3283,6 +3289,7 @@ STATE_DEPS = [
     "//tensorflow/core:framework",
     "//tensorflow/core:lib",
     "//tensorflow/core:state_ops_op_lib",
+    "updates_stats"
 ]
 
 tf_kernel_library(
@@ -3420,6 +3427,7 @@ tf_kernel_library(
     name = "training_ops",
     prefix = "training_ops",
     deps = [
+        ":updates_stats",
         ":bounds_check",
         ":variable_ops",
         "//tensorflow/core:framework",

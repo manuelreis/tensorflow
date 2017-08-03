@@ -22,6 +22,12 @@ limitations under the License.
 #include "tensorflow/core/kernels/bounds_check.h"
 #include "tensorflow/core/kernels/variable_ops.h"
 
+#include "updates_stats.h"
+// (dleoni) include chrono library to measure the time needed to acquire the lock in 
+// the computation of the updates
+#  include <chrono>
+#  include <ratio>
+
 namespace tensorflow {
 
 using CPUDevice = Eigen::ThreadPoolDevice;
@@ -377,7 +383,17 @@ class ApplyGradientDescentOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* ctx) override {
+
+    // (dleoni) the system clock time when we try to acquire the lock
+    auto acquire_lock_time = std::chrono::system_clock::now();
+
     auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0});
+
+    // (dleoni) the system clock time when the lock has been acquired
+    auto lock_acquired_time = std::chrono::system_clock::now();
+
+    // (dleoni) store the time needed to acquire the lock
+    stats_array[0][local_thread_id].lock_waiting_time += std::chrono::duration<float , std::milli>(lock_acquired_time - acquire_lock_time).count();
     Tensor var;
     OP_REQUIRES_OK(ctx, GetInputTensor(ctx, 0, use_exclusive_lock_, &var));
 
