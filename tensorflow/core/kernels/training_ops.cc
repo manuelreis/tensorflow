@@ -392,8 +392,20 @@ class ApplyGradientDescentOp : public OpKernel {
     // (dleoni) the system clock time when the lock has been acquired
     auto lock_acquired_time = std::chrono::system_clock::now();
 
+    // (dleoni) HACK TO CHECK CONCURRENCY: after having acquired the lock, sleep for 
+    // a "huge" amount of time. Wanted any other thread acquire the lock, it would be
+    // forced to wait
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
     // (dleoni) store the time needed to acquire the lock
-    stats_array[0][local_thread_id].lock_waiting_time += std::chrono::duration<float , std::milli>(lock_acquired_time - acquire_lock_time).count();
+    float lock_waiting_time = std::chrono::duration<float , std::milli>(lock_acquired_time - acquire_lock_time).count();
+    stats_array[0][local_thread_id].lock_waiting_time += lock_waiting_time;
+
+    // (dleoni) eventually update the maximum waiting time for the lock
+    if(lock_waiting_time > stats_array[0][local_thread_id].max_lock_waiting_time) {
+    	stats_array[0][local_thread_id].max_lock_waiting_time = lock_waiting_time;
+    }
     Tensor var;
     OP_REQUIRES_OK(ctx, GetInputTensor(ctx, 0, use_exclusive_lock_, &var));
 
