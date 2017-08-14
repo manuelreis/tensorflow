@@ -40,6 +40,7 @@
 #      kernels, without bringing in libraries that can bloat code size (e.g.,
 #      logging is not included because using it will bring in a large amount of
 #      ostream code).
+# "(dleoni):threadpool_device" - Compile with flag "mhtm"
 #
 # ":example_parser_configuration" -- A library for extracting the
 #      tensorflow.Example proto configuration from a Graph.
@@ -735,6 +736,7 @@ tf_cuda_library(
         ":all_kernels",
         ":core",
         ":direct_session",
+	":threadpool_device",
         ":example_parser_configuration",
         ":gpu_runtime",
         ":lib",
@@ -804,6 +806,20 @@ tf_cuda_library(
     ],
     alwayslink = 1,
 )
+
+# (dleoni) Compile threadpool_device.cc with the mhtm flag in order to
+# include the tm.h header
+tf_cuda_library(
+    name = "threadpool_device",
+    copts = tf_copts() + ["-mhtm"],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":threadpool_device_internal",
+    ],
+    alwayslink = 1,
+)
+
 
 # -----------------------------------------------------------------------------
 # Public Android targets
@@ -1483,6 +1499,7 @@ tf_cuda_library(
             "**/*main.cc",
             "common_runtime/direct_session.cc",
             "common_runtime/direct_session.h",
+            "common_runtime/threadpool_device.cc",
             "common_runtime/gpu_device_context.h",
         ],
     ),
@@ -1495,6 +1512,7 @@ tf_cuda_library(
         exclude = [
             "**/*test*",
             "common_runtime/direct_session.h",
+            "common_runtime/threadpool_device.h",
             "common_runtime/gpu_device_context.h",
         ],
     ),
@@ -1551,6 +1569,30 @@ tf_cuda_library(
     ],
     alwayslink = 1,
 )
+
+
+# (dleoni) Internal implementation of the new rule for threadpool_device
+tf_cuda_library(
+    name = "threadpool_device_internal",
+    srcs = ["common_runtime/threadpool_device.cc"],
+    hdrs = ["common_runtime/threadpool_device.h"],
+    copts = tf_copts() + ["-mhtm"],
+    cuda_deps = [
+        ":gpu_tracer",
+    ],
+    includes = ["kernels"],
+    linkstatic = 1,
+    deps = [
+        ":core_cpu_internal",
+        ":framework",
+        ":lib",
+        ":lib_internal",
+        ":proto_text",
+        ":protos_all_cc",
+    ],
+    alwayslink = 1,
+)
+
 
 cc_library(
     name = "example_parser_configuration",
@@ -1920,6 +1962,7 @@ tf_cc_test(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session_internal",
+        ":threadpool_device_internal",
         ":framework",
         ":framework_internal",
         ":lib",
@@ -2013,6 +2056,7 @@ tf_cc_tests(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session_internal",
+        ":threadpool_device_internal",
         ":framework",
         ":framework_internal",
         ":lib",
@@ -2049,6 +2093,7 @@ tf_cc_tests(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session_internal",
+        ":threadpool_device_internal",
         ":framework",
         ":framework_internal",
         ":lib",
@@ -2082,6 +2127,7 @@ tf_cc_test_mkl(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session_internal",
+        ":threadpool_device_internal",
         ":framework",
         ":framework_internal",
         ":lib",
@@ -2117,6 +2163,7 @@ tf_cc_tests_gpu(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session",
+        ":threadpool_device",
         ":framework",
         ":framework_internal",
         ":gpu_runtime",
@@ -2182,6 +2229,7 @@ tf_cc_test(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session_internal",
+        ":threadpool_device_internal",
         ":framework",
         ":framework_internal",
         ":gpu_runtime",
@@ -2241,6 +2289,7 @@ tf_cc_test(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session_internal",
+        ":threadpool_device_internal",
         ":framework",
         ":framework_internal",
         ":lib",
@@ -2279,6 +2328,7 @@ tf_cc_test(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session_internal",
+        ":threadpool_device_internal",
         ":framework",
         ":framework_internal",
         ":lib",
@@ -2318,6 +2368,7 @@ tf_cc_test(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session_internal",
+        ":threadpool_device_internal",
         ":framework",
         ":framework_internal",
         ":lib",
@@ -2351,6 +2402,7 @@ tf_cc_test(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session_internal",
+        ":threadpool_device_internal",
         ":framework",
         ":framework_internal",
         ":lib",
@@ -2377,6 +2429,7 @@ tf_cc_test(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session_internal",
+        ":threadpool_device_internal",
         ":framework",
         ":framework_internal",
         ":lib",
@@ -2406,6 +2459,7 @@ tf_cc_test_gpu(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session",
+        ":threadpool_device",
         ":framework",
         ":framework_internal",
         ":gpu_runtime",
@@ -2430,6 +2484,7 @@ tf_cc_test_gpu(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session",
+        ":threadpool_device",
         ":framework",
         ":framework_internal",
         ":gpu_runtime",
@@ -2454,6 +2509,7 @@ tf_cc_test_gpu(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session",
+        ":threadpool_device",
         ":framework",
         ":framework_internal",
         ":gpu_runtime",
@@ -2480,6 +2536,7 @@ tf_cc_test(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session_internal",
+        ":threadpool_device_internal",
         ":framework",
         ":framework_internal",
         ":lib",
@@ -2506,6 +2563,7 @@ tf_cc_test(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session_internal",
+        ":threadpool_device_internal",
         ":framework",
         ":framework_internal",
         ":lib",
@@ -2534,6 +2592,7 @@ tf_cc_test(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session_internal",
+        ":threadpool_device_internal",
         ":framework",
         ":framework_internal",
         ":lib",
@@ -2627,6 +2686,7 @@ cc_test(
         ":core_cpu",
         ":core_cpu_internal",
         ":direct_session_internal",
+        ":threadpool_device_internal",
         ":example_parser_configuration",
         ":framework",
         ":framework_internal",
@@ -2656,6 +2716,8 @@ tf_cc_test_gpu(
         ":core_cpu_internal",
         ":direct_session",
         ":direct_session_internal",
+        ":threadpool_device",
+        ":threadpool_device_internal",
         ":framework",
         ":framework_internal",
         ":gpu_runtime",

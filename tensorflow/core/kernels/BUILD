@@ -1511,10 +1511,17 @@ tf_kernel_library(
     ],
 )
 
+cc_inc_library(
+    name = "htm",
+    hdrs = ["tm.h"]
+)
+
 tf_kernel_library(
     name = "resource_variable_ops",
     srcs = ["resource_variable_ops.cc"],
+    copts = ["-mhtm"],
     deps = [
+        "htm",
         ":bounds_check",
         ":dense_update_ops",
         ":gather_functor",
@@ -3283,6 +3290,7 @@ STATE_DEPS = [
     "//tensorflow/core:framework",
     "//tensorflow/core:lib",
     "//tensorflow/core:state_ops_op_lib",
+    "htm"
 ]
 
 tf_kernel_library(
@@ -3300,6 +3308,7 @@ tf_kernel_library(
 tf_kernel_library(
     name = "scatter_op",
     prefix = "scatter_op",
+    copts = ["-mhtm"],
     deps = STATE_DEPS,
 )
 
@@ -3419,7 +3428,9 @@ tf_kernel_library(
 tf_kernel_library(
     name = "training_ops",
     prefix = "training_ops",
+    copts = ["-mhtm"],
     deps = [
+        "htm",
         ":bounds_check",
         ":variable_ops",
         "//tensorflow/core:framework",

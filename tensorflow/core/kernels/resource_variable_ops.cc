@@ -30,6 +30,19 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/util/util.h"
 
+#include "tm.h"
+
+// (dleoni) "local_thread_id" is a thread identifier used to store statistics of the transactions
+// completed by each thread
+extern __thread unsigned int local_thread_id;
+__thread int htm_budget;
+
+// (dleoni) Keep two separate arrays for the statistics of the two transactions:
+// 1 - training_op
+// 2 - scatter_op
+
+__attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[2][80];
+
 namespace tensorflow {
 
 REGISTER_RESOURCE_HANDLE_KERNEL(Var);
@@ -53,13 +66,20 @@ class ReadVariableOp : public OpKernel {
     // TODO(apassos): It's possible to do copy-on-write here instead of always
     // copying by coordinating with the writing code. Do this. This will also
     // obviate the need to hold a lock here.
-    mutex_lock ml(*variable->mu());
+    //mutex_lock ml(*variable->mu());
+    //variable->mu()->lock();
+    //std::cout << "DEBUG_TENSOR is_locked: " << variable->mu()->is_locked() << std::endl;
+    //std::cout << "ReadVariableOp" << std::endl;
+    //htm_budget = HTM_RETRIES;
+    //TM_BEGIN(variable->mu());
     Tensor* out = nullptr;
     OP_REQUIRES_OK(ctx,
                    ctx->allocate_output(0, variable->tensor()->shape(), &out));
     functor::DenseUpdate<Device, T, ASSIGN> copy_functor;
     const Tensor& t = *variable->tensor();
     copy_functor(ctx->eigen_device<Device>(), out->flat<T>(), t.flat<T>());
+    //variable->mu()->unlock();
+    //TM_END(variable->mu());
   }
 };
 
@@ -181,7 +201,10 @@ class AssignVariableOp : public OpKernel {
     // case, yet the refcount is usually 2 instead of 1. Figure out what needs
     // to change in the code to make this not be the case, so we can safely take
     // ownership.
-    mutex_lock ml(*variable->mu());
+    //mutex_lock ml(*variable->mu());
+    //std::cout << "AssignVariableOp" << std::endl;
+    //htm_budget = HTM_RETRIES;
+    //TM_BEGIN(variable->mu());
     const Tensor& value = context->input(1);
     // TODO(apassos): should check that the declared shapes are compatible
     // somewhere, probably.
@@ -198,6 +221,7 @@ class AssignVariableOp : public OpKernel {
     functor::DenseUpdate<Device, T, ASSIGN> copy_functor;
     copy_functor(context->eigen_device<Device>(), variable->tensor()->flat<T>(),
                  value.flat<T>());
+    //TM_END(variable->mu());
   }
 
  private:
@@ -250,11 +274,15 @@ class AssignUpdateVariableOp : public OpKernel {
     // case, yet the refcount is usually 2 instead of 1. Figure out what needs
     // to change in the code to make this not be the case, so we can safely take
     // ownership.
-    mutex_lock ml(*variable->mu());
+    //mutex_lock ml(*variable->mu());
+    //std::cout << "AssignUpdateVariableOp" << std::endl;
+    //htm_budget = HTM_RETRIES;
+    //TM_BEGIN(variable->mu());
     const Tensor& value = context->input(1);
     functor::DenseUpdate<Device, T, Op> update_functor;
     update_functor(context->eigen_device<Device>(),
                    variable->tensor()->flat<T>(), value.flat<T>());
+    //TM_END(variable->mu());
   }
 };
 
@@ -313,6 +341,7 @@ class ResourceGatherOp : public OpKernel {
   explicit ResourceGatherOp(OpKernelConstruction* c) : OpKernel(c) {}
 
   void Compute(OpKernelContext* c) override {
+    TM_SHUTDOWN();
     Var* v = nullptr;
     OP_REQUIRES_OK(c, LookupResource(c, HandleFromInput(c, 0), &v));
     mutex_lock ml(*v->mu());

@@ -21,6 +21,13 @@ limitations under the License.
 #include "tensorflow/core/framework/register_types.h"
 #include "tensorflow/core/kernels/bounds_check.h"
 #include "tensorflow/core/kernels/variable_ops.h"
+#include <Eigen/Sparse>
+#include <unsupported/Eigen/CXX11/Tensor>
+
+#include "tm.h"
+// (dleoni) include chrono library to measure time of execution of the transactions
+#  include <chrono>
+#  include <ratio>
 
 namespace tensorflow {
 
@@ -377,7 +384,7 @@ class ApplyGradientDescentOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* ctx) override {
-    auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0});
+    //auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0});
     Tensor var;
     OP_REQUIRES_OK(ctx, GetInputTensor(ctx, 0, use_exclusive_lock_, &var));
 
@@ -397,14 +404,30 @@ class ApplyGradientDescentOp : public OpKernel {
                                 delta.shape().DebugString()));
 
     const Device& device = ctx->template eigen_device<Device>();
+    
+    htm_budget = HTM_RETRIES;
+   
+    mutex *mutex = GetMutex(ctx, 0);
+
+    // (dleoni) the system clock time when the transaction starts
+    auto transaction_start_time = std::chrono::system_clock::now();
+
+    // (dleoni) index of this transaction within statistics matrix is 0
+    TM_BEGIN(mutex, 0);
+
     functor::ApplyGradientDescent<Device, T>()(
         device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
 
+    // (dleoni) pass the time of the start of the transaction in order
+    // to calculate its duration
+
+    TM_END(mutex, 0, transaction_start_time);
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
 
  private:
   bool use_exclusive_lock_;
+  T *temp_var_ = nullptr;
 };
 
 #define REGISTER_KERNELS(D, T)                                                \
