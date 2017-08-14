@@ -23,6 +23,7 @@ extern __thread unsigned local_thread_id;
 
 #  define print_updates_stats() { \
 	int j= 0; \
+	float absolute_updates_duration = 0; \
 	float absolute_average_update_duration = 0.0f; \
 	float absolute_maximum_update_duration = 0.0f; \
 	float absolute_average_lock_waiting = 0.0f; \
@@ -42,6 +43,7 @@ extern __thread unsigned local_thread_id;
 			float average_update_time = stats_array[j][i].update_time / stats_array[j][i].number_of_updates; \
 			float average_lock_waiting_time = stats_array[j][i].lock_waiting_time / stats_array[j][i].number_of_updates; \
 			total_average_update_time += average_update_time; \
+			absolute_updates_duration += stats_array[j][i].update_time; \
 			total_average_lock_waiting += average_lock_waiting_time; \
 			if (stats_array[j][i].update_time > maximum_update_duration) { \
 				maximum_update_duration = stats_array[j][i].update_time; \
@@ -76,7 +78,7 @@ extern __thread unsigned local_thread_id;
 	        absolute_average_lock_waiting = (absolute_average_lock_waiting / actual_updates_type_number); \
 	} \
 	/*printf("Aggregate TM statistics of different types of transactions\n"); */\
-	printf("Average update duration(ms): %f\nMaximum update duration(ms): %f\n", absolute_average_update_duration, absolute_maximum_update_duration); \
+	printf("Total updates duration(ms): %f\nAverage update duration(ms): %f\nMaximum update duration(ms): %f\n", absolute_updates_duration, absolute_average_update_duration, absolute_maximum_update_duration); \
 	printf("Average lock waiting (ms): %f\nMaximum lock waiting(ms): %f", absolute_average_lock_waiting, absolute_maximum_lock_waiting); \
 }
 
