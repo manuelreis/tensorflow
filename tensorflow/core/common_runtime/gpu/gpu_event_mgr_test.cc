@@ -87,6 +87,11 @@ class TestTensorBuffer : public TensorBuffer {
 
   size_t size() const override { return bytes_; }
 
+	// (dleoni) Implementation of "get_data" from TensorBuffer
+	
+	// Not used in this test
+	void* get_data() override { return nullptr; }
+
   // Not used in this test
   void* data() const override { return nullptr; }
   TensorBuffer* root_buffer() override { return nullptr; }

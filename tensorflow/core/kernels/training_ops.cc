@@ -23,13 +23,87 @@ limitations under the License.
 #include "tensorflow/core/kernels/variable_ops.h"
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/CXX11/Tensor>
-
+#include <iostream>
 #include "tm.h"
 // (dleoni) include chrono library to measure time of execution of the transactions
 #  include <chrono>
 #  include <ratio>
 
 namespace tensorflow {
+
+
+// (dleoni) The code to start a transaction: the code tries to use the transactional fast path for NUM_RETRIES time (this costant is defined in "tm.h"); every time we the transaction fails, we track the reason of the failure.
+// After NUM_RETRIES time, the code uses the fallback "slow" path, acquiring a lock
+//
+// @mutex: the mutex to be used for the fallback path
+// @tx_index: the index of the transaction; we track different type of transactions using the same multi-dimensional array
+
+void inline tm_begin(mutex* mutex, int tx_index) {
+while(1){
+	while(IS_LOCKED(mutex)){
+		__asm volatile ("" : : : "memory");
+	}
+	TM_buff_type TM_buff;
+    	unsigned int status = __TM_begin(&TM_buff);
+    	if (status == _HTM_TBEGIN_STARTED) {
+    		if(IS_LOCKED(mutex)){
+      			__TM_abort();
+     		}
+    		break;
+    	} else {
+		if(__TM_is_failure_persistent(&TM_buff)){
+      			SPEND_BUDGET(&htm_budget);
+						printf("PERSISTENT\n");
+      		}
+		if(__TM_is_footprint_exceeded(&TM_buff)) {
+      			//htm_budget--;
+        		printf("CAPACITY\n");
+      		}
+		else if(__TM_is_user_abort(&TM_buff)) {
+        		htm_budget--;
+       			printf("USER\n");
+      		}
+		else if(__TM_is_self_conflict(&TM_buff)){
+        		htm_budget--;
+        		printf("SELF\n");
+      		}
+		else if(__TM_is_trans_conflict(&TM_buff)){
+        		htm_budget--;
+        		printf("TRANS\n");
+      		}
+		else if(__TM_is_nontrans_conflict(&TM_buff)){
+        		htm_budget--;
+        		printf("NONPASS\n");
+      		}
+      		else {
+        		htm_budget--;
+        		printf("OTHER\n");
+      		}
+	}
+	if (htm_budget <= 0) {
+    		mutex->lock();
+    		break;
+    	}
+}
+}
+
+// (dleoni) The code to mark the end a transaction. The code checks the amount of budget available after the transaction: if it's positive, the transactional path has been used, otherwise the fallback path has been used
+//
+// @mutex: the mutex to be used for the fallback path
+// @tx_index: the index of the transaction; we track different type of transactions using the same multi-dimensional array
+// @tx_start_time: the moment when the transaction started; this is necessary to track the duration of the transaction
+
+void inline tm_end(mutex* mutex, int tx_index) {
+if (htm_budget > 0) {
+	__TM_end();
+	printf("TLE commit; budget %d\n", htm_budget);
+}
+else {
+	mutex->unlock();
+	printf("Global lock commit\n");
+}
+}  
+
 
 using CPUDevice = Eigen::ThreadPoolDevice;
 using GPUDevice = Eigen::GpuDevice;
@@ -392,11 +466,13 @@ class ApplyGradientDescentOp : public OpKernel {
         ctx, var.IsInitialized(),
         errors::FailedPrecondition(
             "Attempting to use uninitialized variables: ", def().input(0)));
-    const Tensor& alpha = ctx->input(1);
+    const Tensor& const_alpha = ctx->input(1);
+		Tensor alpha = const_alpha; 
     OP_REQUIRES(ctx, IsLegacyScalar(alpha.shape()),
                 errors::InvalidArgument("alpha is not a scalar: ",
                                         alpha.shape().DebugString()));
-    const Tensor& delta = ctx->input(2);
+    const Tensor& const_delta = ctx->input(2);
+		Tensor delta = const_delta;
     OP_REQUIRES(
         ctx, var.shape().IsSameSize(delta.shape()),
         errors::InvalidArgument("var and delta do not have the same shape",
@@ -413,15 +489,47 @@ class ApplyGradientDescentOp : public OpKernel {
     auto transaction_start_time = std::chrono::system_clock::now();
 
     // (dleoni) index of this transaction within statistics matrix is 0
-    TM_BEGIN(mutex, 0);
+    //TM_BEGIN(mutex, 0);
 
-    functor::ApplyGradientDescent<Device, T>()(
-        device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
+  //  auto var_ = var.flat<T>();
+//    std::cout << "var -> dtype:" << var.dtype(); 
+//    std::cout << "var -> dims:" << var.dims(); 
+//    std::cout << "var -> NumElements:" << var.NumElements(); 
+//    std::cout << "var -> AllocatedBytes:" << var.AllocatedBytes(); 
+//    std::cout << "var -> DebugString:" << var.DebugString();
+//    auto var_buffer = var.GetInnerBuffer(); 
+//    auto lr_ = alpha.scalar<T>();
+//    std::cout << "alpha -> dtype:" << alpha.dtype(); 
+//    std::cout << "alpha -> dims:" << alpha.dims(); 
+//    std::cout << "alpha -> NumElements:" << alpha.NumElements(); 
+//    std::cout << "alpha -> AllocatedBytes:" << alpha.AllocatedBytes(); 
+//    std::cout << "alpha -> DebugString:" << alpha.DebugString();
+//    auto grad_ = delta.flat<T>();
+//    std::cout << "delta -> dtype:" << delta.dtype(); 
+//    std::cout << "delta -> dims:" << delta.dims(); 
+//    std::cout << "delta -> NumElements:" << delta.NumElements(); 
+//    std::cout << "delta -> AllocatedBytes:" << delta.AllocatedBytes(); 
+//    std::cout << "delta -> DebugString:" << delta.DebugString();
+    float* var_pointer = (float*) var.GetInnerBuffer()->get_data();
+    float* alpha_pointer = (float*) alpha.GetInnerBuffer()->get_data();
+    float* delta_pointer = (float*) delta.GetInnerBuffer()->get_data();
+    auto size_tensor = var.NumElements();
+    tm_begin(mutex, 0);
+    
+    for(int i=0; i < size_tensor; i++) {
+      var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
+    }
+
+    //var_.device(device) -= grad_ * lr_();
+		
+    //functor::ApplyGradientDescent<Device, T>()(
+    //    device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
 
     // (dleoni) pass the time of the start of the transaction in order
     // to calculate its duration
 
-    TM_END(mutex, 0, transaction_start_time);
+    //TM_END(mutex, 0, transaction_start_time);
+    tm_end(mutex, 0);
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
 

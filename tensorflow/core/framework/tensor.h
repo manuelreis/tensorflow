@@ -415,7 +415,14 @@ class Tensor {
   /// This tensor shares other's underlying storage.
   void UnsafeCopyFromInternal(const Tensor&, DataType dtype,
                               const TensorShape&);
-
+	//(dleoni) Expose the inner TensorBuffer
+	
+	public: 
+	
+  TensorBuffer* GetInnerBuffer() {
+    return this->buf_;
+  }
+	
  private:
   // Returns true if the refcount on buf_ and any possible underlying root
   // buffer is one.
@@ -485,6 +492,9 @@ class Tensor {
 class TensorBuffer : public core::RefCounted {
  public:
   ~TensorBuffer() override {}
+
+	// (dleoni) Return underlying buffer
+  virtual void* get_data() = 0;
 
   // data() points to a memory region of size() bytes.
   virtual void* data() const = 0;

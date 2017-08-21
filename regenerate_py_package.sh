@@ -6,20 +6,18 @@ HOME=/home/shady/dleoni
 # 1 - ./configure --prefix=${HOME}/tensorflow_build
 # 2 - modify "tensorflow/workspace.bzl" commenting line 88: replace "patch", with "HOME/patch_build/bin/patch"
 
-export PATH=$HOME/python_build/bin:$HOME/patch_build/bin:$HOME/python_build/include/python2.7:$HOME/python-wheel/bin:$HOME/bazel/output:$HOME/protobuf_build/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/shady/.local/bin:/home/shady/bin
-export LD_LIBRARY_PATH=$HOME/python_build/lib/engines:$HOME/python_build/lib
+export PATH=/home/shady/dleoni/python_build/bin:/home/shady/dleoni/patch_build/bin:/home/shady/dleoni/python_build/include/python2.7:/home/shady/dleoni/python-wheel/bin:/home/shady/dleoni/bazel/output:/home/shady/dleoni/protobuf_build/bin:/home/shady/dleoni/libtool/lib:/home/shady/dleoni/m4/bin:/home/shady/dleoni/autoconf/bin:/home/shady/dleoni/automake/bin:/home/shady/dleoni/libtool/bin:/home/shady/dleoni/libtool/include:/home/shady/dleoni/libtool/share:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/shady/.local/bin:/home/shady/bin
 
-rm -rf $HOME/bazel_output_base
-rm -rf $HOME/bazel_output_user_root
-rm -rf $HOME/tensorflow_pip_package
-rm -rf $HOME/tensorflow_build
-mkdir $HOME/bazel_output_base
-mkdir $HOME/bazel_output_user_root
-mkdir $HOME/tensorflow_pip_package
-mkdir $HOME/tensorflow_build
+export LD_LIBRARY_PATH=/home/shady/dleoni/python_build/lib/engines:/home/shady/dleoni/openssl_build/lib:/usr/lib64/openssl:/home/shady/dleoni/python_build/lib
 
+mkdir -p $HOME/bazel_output_base
+mkdir -p $HOME/bazel_output_user_root
+mkdir -p $HOME/tensorflow_pip_package
+mkdir -p $HOME/tensorflow_build
 
-bazel --output_base=$HOME/bazel_output_base --output_user_root=$HOME/bazel_output_user_root build -c opt -c dbg --strip=never --verbose_failures --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/tools/pip_package:build_pip_package
+# restore OPTIMIZATIONS "-c opt"
+#bazel --output_base=$HOME/bazel_output_base --output_user_root=$HOME/bazel_output_user_root build -c opt -c dbg --strip=never --verbose_failures --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/tools/pip_package:build_pip_package
+bazel --output_base=$HOME/bazel_output_base --output_user_root=$HOME/bazel_output_user_root build -c dbg --strip=never --verbose_failures --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/tools/pip_package:build_pip_package
 cd $HOME/tensorflow
 bazel-bin/tensorflow/tools/pip_package/build_pip_package $HOME/tensorflow_pip_package
 /usr/bin/yes | pip uninstall tensorflow

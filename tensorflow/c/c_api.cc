@@ -118,7 +118,11 @@ const char* TF_Message(const TF_Status* s) {
 namespace {
 class TF_ManagedBuffer : public TensorBuffer {
  public:
-  void* data_;
+  
+	// (dleoni) Implementation of "get_data" from TensorBuffer
+
+	void* get_data() override{ return data_; }
+	void* data_;
   size_t len_;
   void (*deallocator_)(void* data, size_t len, void* arg);
   void* deallocator_arg_;

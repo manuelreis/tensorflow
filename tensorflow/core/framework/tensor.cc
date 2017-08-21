@@ -91,6 +91,10 @@ class Buffer : public BufferBase {
 
   void* data() const override { return data_; }
   size_t size() const override { return sizeof(T) * elem_; }
+	
+	// (dleoni) Implementation of "get_data" from TensorBuffer
+	
+	void* get_data() override { return data_; }	
 
  private:
   T* data_;
@@ -623,7 +627,10 @@ class SubBuffer : public TensorBuffer {
     // NOTE: 'buf' is a sub-buffer inside the 'root_' buffer.
     root_->Ref();
   }
-
+	
+	// (dleoni) Implementation of "get_data"
+	
+  void* get_data() override { return data_; }
   void* data() const override { return data_; }
   size_t size() const override { return sizeof(T) * elem_; }
   TensorBuffer* root_buffer() override { return root_; }
