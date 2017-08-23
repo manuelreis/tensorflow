@@ -458,7 +458,8 @@ class ApplyGradientDescentOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* ctx) override {
-    //auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0});
+    printf("FINAL simplified  WITH OPTIMIZATIONS\n");
+    auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0});
     Tensor var;
     OP_REQUIRES_OK(ctx, GetInputTensor(ctx, 0, use_exclusive_lock_, &var));
 
@@ -466,13 +467,11 @@ class ApplyGradientDescentOp : public OpKernel {
         ctx, var.IsInitialized(),
         errors::FailedPrecondition(
             "Attempting to use uninitialized variables: ", def().input(0)));
-    const Tensor& const_alpha = ctx->input(1);
-		Tensor alpha = const_alpha; 
+    const Tensor& alpha = ctx->input(1);
     OP_REQUIRES(ctx, IsLegacyScalar(alpha.shape()),
                 errors::InvalidArgument("alpha is not a scalar: ",
                                         alpha.shape().DebugString()));
-    const Tensor& const_delta = ctx->input(2);
-		Tensor delta = const_delta;
+    const Tensor& delta = ctx->input(2);
     OP_REQUIRES(
         ctx, var.shape().IsSameSize(delta.shape()),
         errors::InvalidArgument("var and delta do not have the same shape",
@@ -481,55 +480,34 @@ class ApplyGradientDescentOp : public OpKernel {
 
     const Device& device = ctx->template eigen_device<Device>();
     
-    htm_budget = HTM_RETRIES;
+    //htm_budget = HTM_RETRIES;
    
-    mutex *mutex = GetMutex(ctx, 0);
+    //mutex *mutex = GetMutex(ctx, 0);
 
     // (dleoni) the system clock time when the transaction starts
-    auto transaction_start_time = std::chrono::system_clock::now();
+    //auto transaction_start_time = std::chrono::system_clock::now();
 
     // (dleoni) index of this transaction within statistics matrix is 0
     //TM_BEGIN(mutex, 0);
 
-  //  auto var_ = var.flat<T>();
-//    std::cout << "var -> dtype:" << var.dtype(); 
-//    std::cout << "var -> dims:" << var.dims(); 
-//    std::cout << "var -> NumElements:" << var.NumElements(); 
-//    std::cout << "var -> AllocatedBytes:" << var.AllocatedBytes(); 
-//    std::cout << "var -> DebugString:" << var.DebugString();
-//    auto var_buffer = var.GetInnerBuffer(); 
-//    auto lr_ = alpha.scalar<T>();
-//    std::cout << "alpha -> dtype:" << alpha.dtype(); 
-//    std::cout << "alpha -> dims:" << alpha.dims(); 
-//    std::cout << "alpha -> NumElements:" << alpha.NumElements(); 
-//    std::cout << "alpha -> AllocatedBytes:" << alpha.AllocatedBytes(); 
-//    std::cout << "alpha -> DebugString:" << alpha.DebugString();
-//    auto grad_ = delta.flat<T>();
-//    std::cout << "delta -> dtype:" << delta.dtype(); 
-//    std::cout << "delta -> dims:" << delta.dims(); 
-//    std::cout << "delta -> NumElements:" << delta.NumElements(); 
-//    std::cout << "delta -> AllocatedBytes:" << delta.AllocatedBytes(); 
-//    std::cout << "delta -> DebugString:" << delta.DebugString();
-    float* var_pointer = (float*) var.GetInnerBuffer()->get_data();
-    float* alpha_pointer = (float*) alpha.GetInnerBuffer()->get_data();
-    float* delta_pointer = (float*) delta.GetInnerBuffer()->get_data();
+    /*T* var_pointer = (T*) var.buf_->data();
+    T* alpha_pointer = (T*) alpha.buf_->data();
+    T* delta_pointer = (T*) delta.buf_->data();
     auto size_tensor = var.NumElements();
     tm_begin(mutex, 0);
     
     for(int i=0; i < size_tensor; i++) {
       var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
-    }
+    }*/
 
-    //var_.device(device) -= grad_ * lr_();
-		
-    //functor::ApplyGradientDescent<Device, T>()(
-    //    device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
+    functor::ApplyGradientDescent<Device, T>()(
+        device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
 
     // (dleoni) pass the time of the start of the transaction in order
     // to calculate its duration
 
     //TM_END(mutex, 0, transaction_start_time);
-    tm_end(mutex, 0);
+    //tm_end(mutex, 0);
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
 

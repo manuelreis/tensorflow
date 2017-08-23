@@ -240,10 +240,7 @@ class NumpyTensorBuffer : public TensorBuffer {
     // holding the GIL.
     DelayedNumpyDecref(data_, len_, array_);
   }
-	
-	// (dleoni) Implementation of "get_data" from TensorBuffer
-	
-	void* get_data() override { return data_; }	
+
   void* data() const override { return data_; }
   size_t size() const override { return len_; }
   TensorBuffer* root_buffer() override { return this; }
