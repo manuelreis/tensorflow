@@ -384,7 +384,7 @@ class ApplyGradientDescentOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* ctx) override {
-    //auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0});
+    auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0});
     Tensor var;
     OP_REQUIRES_OK(ctx, GetInputTensor(ctx, 0, use_exclusive_lock_, &var));
 
@@ -413,7 +413,7 @@ class ApplyGradientDescentOp : public OpKernel {
     auto transaction_start_time = std::chrono::system_clock::now();
 
     // (dleoni) index of this transaction within statistics matrix is 0
-    TM_BEGIN(mutex, 0);
+    //TM_BEGIN(mutex, 0);
 
     functor::ApplyGradientDescent<Device, T>()(
         device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
@@ -421,7 +421,7 @@ class ApplyGradientDescentOp : public OpKernel {
     // (dleoni) pass the time of the start of the transaction in order
     // to calculate its duration
 
-    TM_END(mutex, 0, transaction_start_time);
+    //TM_END(mutex, 0, transaction_start_time);
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
 
