@@ -10,14 +10,19 @@ export PATH=/home/shady/dleoni/python_build/bin:/home/shady/dleoni/patch_build/b
 
 export LD_LIBRARY_PATH=/home/shady/dleoni/python_build/lib/engines:/home/shady/dleoni/openssl_build/lib:/usr/lib64/openssl:/home/shady/dleoni/python_build/lib
 
-mkdir -p $HOME/bazel_output_base
-mkdir -p $HOME/bazel_output_user_root
-mkdir -p $HOME/tensorflow_pip_package
-mkdir -p $HOME/tensorflow_build
+rm -rf $HOME/bazel_output_base
+rm -rf $HOME/bazel_output_user_root
+rm -rf $HOME/tensorflow_pip_package
+rm -rf $HOME/tensorflow_build
+
+mkdir $HOME/bazel_output_base
+mkdir $HOME/bazel_output_user_root
+mkdir $HOME/tensorflow_pip_package
+mkdir $HOME/tensorflow_build
 
 # restore OPTIMIZATIONS "-c opt"
 #bazel --output_base=$HOME/bazel_output_base --output_user_root=$HOME/bazel_output_user_root build -c opt -c dbg --strip=never --verbose_failures --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/tools/pip_package:build_pip_package
-bazel --output_base=$HOME/bazel_output_base --output_user_root=$HOME/bazel_output_user_root build -c dbg --strip=never --verbose_failures --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/tools/pip_package:build_pip_package
+bazel --output_base=$HOME/bazel_output_base --output_user_root=$HOME/bazel_output_user_root build -c dbg -c opt --strip=never --verbose_failures --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/tools/pip_package:build_pip_package
 cd $HOME/tensorflow
 bazel-bin/tensorflow/tools/pip_package/build_pip_package $HOME/tensorflow_pip_package
 /usr/bin/yes | pip uninstall tensorflow
