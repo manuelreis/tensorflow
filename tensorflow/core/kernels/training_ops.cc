@@ -31,6 +31,73 @@ limitations under the License.
 
 namespace tensorflow {
 
+void inline tm_begin(mutex* mutex, int tx_index) {
+while(1){
+	while(IS_LOCKED(mutex)){
+		__asm volatile ("" : : : "memory");
+	}
+	TM_buff_type TM_buff;
+    	unsigned int status = __TM_begin(&TM_buff);
+    	if (status == _HTM_TBEGIN_STARTED) {
+    		if(IS_LOCKED(mutex)){
+      			__TM_abort();
+     		}
+    		break;
+    	} else {
+		if(__TM_is_failure_persistent(&TM_buff)){
+      			SPEND_BUDGET(&htm_budget);
+						printf("PERSISTENT\n");
+      		}
+		if(__TM_is_footprint_exceeded(&TM_buff)) {
+      			//htm_budget--;
+        		printf("CAPACITY\n");
+      		}
+		else if(__TM_is_user_abort(&TM_buff)) {
+        		htm_budget--;
+       			printf("USER\n");
+      		}
+		else if(__TM_is_self_conflict(&TM_buff)){
+        		htm_budget--;
+        		printf("SELF\n");
+      		}
+		else if(__TM_is_trans_conflict(&TM_buff)){
+        		htm_budget--;
+        		printf("TRANS\n");
+      		}
+		else if(__TM_is_nontrans_conflict(&TM_buff)){
+        		htm_budget--;
+        		printf("NONPASS\n");
+      		}
+      		else {
+        		htm_budget--;
+        		printf("OTHER\n");
+      		}
+	}
+	if (htm_budget <= 0) {
+    		mutex->lock();
+    		break;
+    	}
+}
+}
+
+// (dleoni) The code to mark the end a transaction. The code checks the amount of budget available after the transaction: if it's positive, the transactional path has been used, otherwise the fallback path has been used
+//
+// @mutex: the mutex to be used for the fallback path
+// @tx_index: the index of the transaction; we track different type of transactions using the same multi-dimensional array
+// @tx_start_time: the moment when the transaction started; this is necessary to track the duration of the transaction
+
+void inline tm_end(mutex* mutex, int tx_index) {
+if (htm_budget > 0) {
+	__TM_end();
+	printf("TLE commit; budget %d\n", htm_budget);
+}
+else {
+	mutex->unlock();
+	printf("Global lock commit\n");
+}
+}  
+
+
 using CPUDevice = Eigen::ThreadPoolDevice;
 using GPUDevice = Eigen::GpuDevice;
 using SYCLDevice = Eigen::SyclDevice;
@@ -384,7 +451,7 @@ class ApplyGradientDescentOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* ctx) override {
-    auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0});
+    //auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0});
     Tensor var;
     OP_REQUIRES_OK(ctx, GetInputTensor(ctx, 0, use_exclusive_lock_, &var));
 
@@ -414,9 +481,22 @@ class ApplyGradientDescentOp : public OpKernel {
 
     // (dleoni) index of this transaction within statistics matrix is 0
     //TM_BEGIN(mutex, 0);
+    
+    tm_begin(mutex, 0);
 
-    functor::ApplyGradientDescent<Device, T>()(
-        device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
+    float* var_pointer = (float*) var.buf_->data();
+    float* alpha_pointer = (float*) alpha.buf_->data();
+    float* delta_pointer = (float*) delta.buf_->data();
+    auto size_tensor = var.NumElements();
+
+    for(int i=0; i < size_tensor; i++) {
+      var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
+    }
+    
+    tm_end(mutex, 0);
+    
+    /*functor::ApplyGradientDescent<Device, T>()(
+        device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());*/
 
     // (dleoni) pass the time of the start of the transaction in order
     // to calculate its duration
