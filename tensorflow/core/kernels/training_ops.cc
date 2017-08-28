@@ -56,28 +56,33 @@ while(1){
 		if(__TM_is_footprint_exceeded(&TM_buff)) {
       			//htm_budget--;
         		stats_array[local_thread_id].capacity_aborts++;
+						stats_array[local_thread_id].aborts++;
       		}
 		else if(__TM_is_user_abort(&TM_buff)) {
         		htm_budget--;
         		stats_array[local_thread_id].user_aborts++;
+						stats_array[local_thread_id].aborts++;
       		}
 		else if(__TM_is_self_conflict(&TM_buff)){
         		htm_budget--;
         		stats_array[local_thread_id].self_conflicts++;
+						stats_array[local_thread_id].conflicts++;
       		}
 		else if(__TM_is_trans_conflict(&TM_buff)){
         		htm_budget--;
         		stats_array[local_thread_id].trans_conflicts++;
+						stats_array[local_thread_id].conflicts++;
       		}
 		else if(__TM_is_nontrans_conflict(&TM_buff)){
         		htm_budget--;
         		stats_array[local_thread_id].nontrans_conflicts++;
+						stats_array[local_thread_id].conflicts++;
       		}
       		else {
         		htm_budget--;
         		stats_array[local_thread_id].other_aborts++;
+						stats_array[local_thread_id].aborts++;
       		}
-		stats_array[local_thread_id].aborts++;
 	}
 	if (htm_budget <= 0) {
     		mutex->lock();
