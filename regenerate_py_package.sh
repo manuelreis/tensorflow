@@ -6,8 +6,11 @@ HOME=/home/shady/dleoni
 # 1 - ./configure --prefix=${HOME}/tensorflow_build
 # 2 - modify "tensorflow/workspace.bzl" commenting line 88: replace "patch", with "HOME/patch_build/bin/patch"
 
-export PATH=$HOME/python_build/bin:$HOME/patch_build/bin:$HOME/python_build/include/python2.7:$HOME/python-wheel/bin:$HOME/bazel/output:$HOME/protobuf_build/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/shady/.local/bin:/home/shady/bin
-export LD_LIBRARY_PATH=$HOME/python_build/lib/engines:$HOME/python_build/lib
+export PATH=/home/shady/dleoni/python_build/bin:/home/shady/dleoni/patch_build/bin:/home/shady/dleoni/python_build/include/python2.7:/home/shady/dleoni/python-wheel/bin:/home/shady/dleoni/bazel/output:/home/shady/dleoni/protobuf_build/bin:/home/shady/dleoni/libtool/lib:/home/shady/dleoni/m4/bin:/home/shady/dleoni/autoconf/bin:/home/shady/dleoni/automake/bin:/home/shady/dleoni/libtool/bin:/home/shady/dleoni/libtool/include:/home/shady/dleoni/libtool/share:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/shady/.local/bin:/home/shady/bin
+
+export LD_LIBRARY_PATH=/home/shady/dleoni/python_build/lib/engines:/home/shady/dleoni/openssl_build/lib:/usr/lib64/openssl:/home/shady/dleoni/python_build/lib
+
+
 
 rm -rf $HOME/bazel_output_base
 rm -rf $HOME/bazel_output_user_root
