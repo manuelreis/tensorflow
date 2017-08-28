@@ -59,12 +59,10 @@ void ThreadPoolDevice::Compute(OpKernel* op_kernel, OpKernelContext* context) {
     op_kernel->Compute(context);
   } else {
     
-    // (dleoni) Track the time spent to compute two operations:
-    // 1-ApplyGradientDescent
-    // 2-ScatterSub
+    // (dleoni) Track the time spent to compute the ApplyGradientDescent operation
 
     const string& op_name = op_kernel->type_string();
-    if ((!op_name.compare("ApplyGradientDescent")) || (!op_name.compare("ScatterSub"))) {
+    if (!op_name.compare("ApplyGradientDescent")) {
       
       // (dleoni) the system clock time when the operation starts
       auto op_start_time = std::chrono::system_clock::now();
@@ -74,15 +72,9 @@ void ThreadPoolDevice::Compute(OpKernel* op_kernel, OpKernelContext* context) {
       // (dleoni) the system clock time when the operation ends
       auto op_end_time = std::chrono::system_clock::now();
     
-      // (dleoni) store the duration of the operation in its array of per-thread statistics;
-      // also update the counter for number of computations
-      if (!op_name.compare("ApplyGradientDescent")) {
-        stats_array[0][local_thread_id].total_operations_time += std::chrono::duration<float , std::milli>(op_end_time - op_start_time).count();
-	stats_array[0][local_thread_id].number_of_operations++;
-      } else {
-        stats_array[1][local_thread_id].total_operations_time += std::chrono::duration<float , std::milli>(op_end_time - op_start_time).count();
-	stats_array[1][local_thread_id].number_of_operations++;
-      }
+      // (dleoni) store the duration of the operation in its array of per-thread statistics; also update the counter for number of computations
+      stats_array[local_thread_id].total_operations_time += std::chrono::duration<float , std::milli>(op_end_time - op_start_time).count();
+			stats_array[local_thread_id].number_of_operations++;
     } else {
       op_kernel->Compute(context);
     }

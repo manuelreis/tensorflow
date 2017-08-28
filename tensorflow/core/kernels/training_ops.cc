@@ -31,7 +31,12 @@ limitations under the License.
 
 namespace tensorflow {
 
-void inline tm_begin(mutex* mutex, int tx_index) {
+// (dleoni) The code to start a transaction: the code tries to use the transactional fast path for NUM_RETRIES time (this costant is defined in "tm.h"); every time we the transaction fails, we track the reason of the failure.
+// After NUM_RETRIES time, the code uses the fallback "slow" path, acquiring a lock
+//
+// @mutex: the mutex to be used for the fallback path
+
+void inline tm_begin(mutex* mutex) {
 while(1){
 	while(IS_LOCKED(mutex)){
 		__asm volatile ("" : : : "memory");
@@ -46,32 +51,33 @@ while(1){
     	} else {
 		if(__TM_is_failure_persistent(&TM_buff)){
       			SPEND_BUDGET(&htm_budget);
-						printf("PERSISTENT\n");
+			stats_array[local_thread_id].persistent_failures++;
       		}
 		if(__TM_is_footprint_exceeded(&TM_buff)) {
       			//htm_budget--;
-        		printf("CAPACITY\n");
+        		stats_array[local_thread_id].capacity_aborts++;
       		}
 		else if(__TM_is_user_abort(&TM_buff)) {
         		htm_budget--;
-       			printf("USER\n");
+        		stats_array[local_thread_id].user_aborts++;
       		}
 		else if(__TM_is_self_conflict(&TM_buff)){
         		htm_budget--;
-        		printf("SELF\n");
+        		stats_array[local_thread_id].self_conflicts++;
       		}
 		else if(__TM_is_trans_conflict(&TM_buff)){
         		htm_budget--;
-        		printf("TRANS\n");
+        		stats_array[local_thread_id].trans_conflicts++;
       		}
 		else if(__TM_is_nontrans_conflict(&TM_buff)){
         		htm_budget--;
-        		printf("NONPASS\n");
+        		stats_array[local_thread_id].nontrans_conflicts++;
       		}
       		else {
         		htm_budget--;
-        		printf("OTHER\n");
+        		stats_array[local_thread_id].other_aborts++;
       		}
+		stats_array[local_thread_id].aborts++;
 	}
 	if (htm_budget <= 0) {
     		mutex->lock();
@@ -80,23 +86,32 @@ while(1){
 }
 }
 
-// (dleoni) The code to mark the end a transaction. The code checks the amount of budget available after the transaction: if it's positive, the transactional path has been used, otherwise the fallback path has been used
+// (dleoni) The code to mark the end a transaction. The code checks the amount of budget available after the transaction: if it's positive, the transactional path has been used, otherwise the fallback path has been used. Also it tracks statistics about per-thread duration of the transactions
 //
 // @mutex: the mutex to be used for the fallback path
-// @tx_index: the index of the transaction; we track different type of transactions using the same multi-dimensional array
 // @tx_start_time: the moment when the transaction started; this is necessary to track the duration of the transaction
 
-void inline tm_end(mutex* mutex, int tx_index) {
+void inline tm_end(mutex* mutex, std::chrono::time_point<std::chrono::system_clock> transaction_start_time) {
 if (htm_budget > 0) {
 	__TM_end();
-	printf("TLE commit; budget %d\n", htm_budget);
+	stats_array[local_thread_id].tle_commits++;
 }
 else {
 	mutex->unlock();
-	printf("Global lock commit\n");
+	stats_array[local_thread_id].gl_commits++;
 }
-}  
-
+auto transaction_end_time = std::chrono::system_clock::now();
+float transaction_duration = std::chrono::duration<float , std::milli>(transaction_end_time - transaction_start_time).count();
+stats_array[local_thread_id].total_transactions_time += transaction_duration;
+stats_array[local_thread_id].number_of_transactions++; 
+if ((stats_array[local_thread_id].minimum_transaction_time == 0.0f) || (transaction_duration < stats_array[local_thread_id].minimum_transaction_time))
+{
+	stats_array[local_thread_id].minimum_transaction_time = transaction_duration;
+}
+if (transaction_duration > stats_array[local_thread_id].maximum_transaction_time) {
+	stats_array[local_thread_id].maximum_transaction_time = transaction_duration;
+}
+}
 
 using CPUDevice = Eigen::ThreadPoolDevice;
 using GPUDevice = Eigen::GpuDevice;
@@ -478,30 +493,28 @@ class ApplyGradientDescentOp : public OpKernel {
 
     // (dleoni) the system clock time when the transaction starts
     auto transaction_start_time = std::chrono::system_clock::now();
-
-    // (dleoni) index of this transaction within statistics matrix is 0
-    //TM_BEGIN(mutex, 0);
     
-    tm_begin(mutex, 0);
-
     float* var_pointer = (float*) var.buf_->data();
     float* alpha_pointer = (float*) alpha.buf_->data();
     float* delta_pointer = (float*) delta.buf_->data();
     auto size_tensor = var.NumElements();
-
+    tm_begin(mutex);
+    
+    //printf("var size:%zu\n", var.buf_->size());
+    //printf("alpha size:%zu\n",alpha.buf_->size());
+    //printf("delta size:%zu\n", delta.buf_->size());
+    //printf("number of elements:%d\n", size_tensor);
     for(int i=0; i < size_tensor; i++) {
       var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
     }
     
-    tm_end(mutex, 0);
+    // (dleoni) pass the time of the start of the transaction in order
+    // to calculate its duration
+    tm_end(mutex, transaction_start_time);
     
     /*functor::ApplyGradientDescent<Device, T>()(
         device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());*/
 
-    // (dleoni) pass the time of the start of the transaction in order
-    // to calculate its duration
-
-    //TM_END(mutex, 0, transaction_start_time);
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
 

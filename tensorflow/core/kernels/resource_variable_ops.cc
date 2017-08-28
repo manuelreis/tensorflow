@@ -37,11 +37,9 @@ limitations under the License.
 extern __thread unsigned int local_thread_id;
 __thread int htm_budget;
 
-// (dleoni) Keep two separate arrays for the statistics of the two transactions:
-// 1 - training_op
-// 2 - scatter_op
+// (dleoni) The array with per-thread statistics of the transactions
 
-__attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[2][80];
+__attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
 
 namespace tensorflow {
 
@@ -341,6 +339,11 @@ class ResourceGatherOp : public OpKernel {
   explicit ResourceGatherOp(OpKernelConstruction* c) : OpKernel(c) {}
 
   void Compute(OpKernelContext* c) override {
+    /*printf("size of float:%zu\n",sizeof(float));
+    printf("size of int:%zu\n",sizeof(int));
+    printf("size of unsigned long:%zu\n",sizeof(unsigned long));
+    printf("size of stats:%zu\n",sizeof(padded_statistics_t));
+    printf("size of pointer to float:%zu\n",sizeof(float*));*/
     TM_SHUTDOWN();
     Var* v = nullptr;
     OP_REQUIRES_OK(c, LookupResource(c, HandleFromInput(c, 0), &v));
