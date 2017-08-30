@@ -50,37 +50,37 @@ while(1){
     		break;
     	} else {
 		if(__TM_is_failure_persistent(&TM_buff)){
-      			SPEND_BUDGET(&htm_budget);
-			stats_array[local_thread_id].persistent_failures++;
+    				SPEND_BUDGET(&htm_budget);
+						stats_array[local_thread_id].persistent_failures++;
       		}
 		if(__TM_is_footprint_exceeded(&TM_buff)) {
       			//htm_budget--;
-        		stats_array[local_thread_id].capacity_aborts++;
+    				stats_array[local_thread_id].capacity_aborts++;
 						stats_array[local_thread_id].aborts++;
       		}
 		else if(__TM_is_user_abort(&TM_buff)) {
         		htm_budget--;
-        		stats_array[local_thread_id].user_aborts++;
+    				stats_array[local_thread_id].user_aborts++;
 						stats_array[local_thread_id].aborts++;
       		}
 		else if(__TM_is_self_conflict(&TM_buff)){
         		htm_budget--;
-        		stats_array[local_thread_id].self_conflicts++;
+    				stats_array[local_thread_id].self_conflicts++;
 						stats_array[local_thread_id].conflicts++;
       		}
 		else if(__TM_is_trans_conflict(&TM_buff)){
         		htm_budget--;
-        		stats_array[local_thread_id].trans_conflicts++;
+    				stats_array[local_thread_id].trans_conflicts++;
 						stats_array[local_thread_id].conflicts++;
       		}
 		else if(__TM_is_nontrans_conflict(&TM_buff)){
         		htm_budget--;
-        		stats_array[local_thread_id].nontrans_conflicts++;
+    				stats_array[local_thread_id].nontrans_conflicts++;
 						stats_array[local_thread_id].conflicts++;
       		}
       		else {
         		htm_budget--;
-        		stats_array[local_thread_id].other_aborts++;
+    				stats_array[local_thread_id].other_aborts++;
 						stats_array[local_thread_id].aborts++;
       		}
 	}
