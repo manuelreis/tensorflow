@@ -38,56 +38,56 @@ namespace tensorflow {
 
 void inline tm_begin(mutex* mutex) {
 while(1){
-	while(IS_LOCKED(mutex)){
-		__asm volatile ("" : : : "memory");
-	}
-	TM_buff_type TM_buff;
-    	unsigned int status = __TM_begin(&TM_buff);
-    	if (status == _HTM_TBEGIN_STARTED) {
-    		if(IS_LOCKED(mutex)){
-      			__TM_abort();
-     		}
-    		break;
-    	} else {
-		if(__TM_is_failure_persistent(&TM_buff)){
-    				SPEND_BUDGET(&htm_budget);
-						stats_array[local_thread_id].persistent_failures++;
-      		}
-		if(__TM_is_footprint_exceeded(&TM_buff)) {
-      			//htm_budget--;
-    				stats_array[local_thread_id].capacity_aborts++;
-						stats_array[local_thread_id].aborts++;
-      		}
-		else if(__TM_is_user_abort(&TM_buff)) {
-        		htm_budget--;
-    				stats_array[local_thread_id].user_aborts++;
-						stats_array[local_thread_id].aborts++;
-      		}
-		else if(__TM_is_self_conflict(&TM_buff)){
-        		htm_budget--;
-    				stats_array[local_thread_id].self_conflicts++;
-						stats_array[local_thread_id].conflicts++;
-      		}
-		else if(__TM_is_trans_conflict(&TM_buff)){
-        		htm_budget--;
-    				stats_array[local_thread_id].trans_conflicts++;
-						stats_array[local_thread_id].conflicts++;
-      		}
-		else if(__TM_is_nontrans_conflict(&TM_buff)){
-        		htm_budget--;
-    				stats_array[local_thread_id].nontrans_conflicts++;
-						stats_array[local_thread_id].conflicts++;
-      		}
-      		else {
-        		htm_budget--;
-    				stats_array[local_thread_id].other_aborts++;
-						stats_array[local_thread_id].aborts++;
-      		}
-	}
-	if (htm_budget <= 0) {
-    		mutex->lock();
-    		break;
-    	}
+  while(IS_LOCKED(mutex)){
+    __asm volatile ("" : : : "memory");
+  }
+  TM_buff_type TM_buff;
+  unsigned int status = __TM_begin(&TM_buff);
+  if (status == _HTM_TBEGIN_STARTED) {
+    if(IS_LOCKED(mutex)){
+      __TM_abort();
+    }
+    break;
+  } else {
+    if(__TM_is_failure_persistent(&TM_buff)){
+      SPEND_BUDGET(&htm_budget);
+      stats_array[local_thread_id].persistent_failures++;
+    }
+    if(__TM_is_footprint_exceeded(&TM_buff)) {
+      //htm_budget--;
+      stats_array[local_thread_id].capacity_aborts++;
+      stats_array[local_thread_id].aborts++;
+    }
+    else if(__TM_is_user_abort(&TM_buff)) {
+      htm_budget--;
+      stats_array[local_thread_id].user_aborts++;
+      stats_array[local_thread_id].aborts++;
+    }
+    else if(__TM_is_self_conflict(&TM_buff)){
+      htm_budget--;
+      stats_array[local_thread_id].self_conflicts++;
+      stats_array[local_thread_id].conflicts++;
+    }
+    else if(__TM_is_trans_conflict(&TM_buff)){
+      htm_budget--;
+      stats_array[local_thread_id].trans_conflicts++;
+      stats_array[local_thread_id].conflicts++;
+    }
+    else if(__TM_is_nontrans_conflict(&TM_buff)){
+      htm_budget--;
+      stats_array[local_thread_id].nontrans_conflicts++;
+      stats_array[local_thread_id].conflicts++;
+    }
+    else {
+      htm_budget--;
+      stats_array[local_thread_id].other_aborts++;
+      stats_array[local_thread_id].aborts++;
+    }
+  }
+  if (htm_budget <= 0) {
+    mutex->lock();
+    break;
+  }
 }
 }
 
@@ -98,12 +98,12 @@ while(1){
 
 void inline tm_end(mutex* mutex, std::chrono::time_point<std::chrono::system_clock> transaction_start_time) {
 if (htm_budget > 0) {
-	__TM_end();
-	stats_array[local_thread_id].tle_commits++;
+  __TM_end();
+  stats_array[local_thread_id].tle_commits++;
 }
 else {
-	mutex->unlock();
-	stats_array[local_thread_id].gl_commits++;
+  mutex->unlock();
+  stats_array[local_thread_id].gl_commits++;
 }
 auto transaction_end_time = std::chrono::system_clock::now();
 float transaction_duration = std::chrono::duration<float , std::milli>(transaction_end_time - transaction_start_time).count();
@@ -111,10 +111,10 @@ stats_array[local_thread_id].total_transactions_time += transaction_duration;
 stats_array[local_thread_id].number_of_transactions++; 
 if ((stats_array[local_thread_id].minimum_transaction_time == 0.0f) || (transaction_duration < stats_array[local_thread_id].minimum_transaction_time))
 {
-	stats_array[local_thread_id].minimum_transaction_time = transaction_duration;
+  stats_array[local_thread_id].minimum_transaction_time = transaction_duration;
 }
 if (transaction_duration > stats_array[local_thread_id].maximum_transaction_time) {
-	stats_array[local_thread_id].maximum_transaction_time = transaction_duration;
+  stats_array[local_thread_id].maximum_transaction_time = transaction_duration;
 }
 }
 
