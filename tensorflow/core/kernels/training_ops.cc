@@ -377,7 +377,10 @@ class ApplyGradientDescentOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* ctx) override {
-    auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0});
+    
+    //(dleoni) The following function returns a LOCKED mutex, but we want to use HLE
+    //auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0});
+    
     Tensor var;
     OP_REQUIRES_OK(ctx, GetInputTensor(ctx, 0, use_exclusive_lock_, &var));
 
@@ -397,8 +400,15 @@ class ApplyGradientDescentOp : public OpKernel {
                                 delta.shape().DebugString()));
 
     const Device& device = ctx->template eigen_device<Device>();
+    
+    //(dleoni) Acquire the lock using HLE before entering the critical section
+    ACQUIRE_LOCK_HLE(&(ctx->lock_var));
+    
     functor::ApplyGradientDescent<Device, T>()(
         device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
+
+    //(dleoni) Critical section finishes here: release the lock using HLE
+    RELEASE_LOCK_HLE(&(ctx->lock_var));
 
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }

@@ -30,6 +30,9 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/util/util.h"
 
+//(dleoni) The integer used as lock in case of HARDWARE LOCK ELISION 
+int lock_var= 0;
+
 namespace tensorflow {
 
 REGISTER_RESOURCE_HANDLE_KERNEL(Var);

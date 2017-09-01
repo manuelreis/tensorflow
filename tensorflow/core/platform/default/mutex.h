@@ -23,6 +23,20 @@ limitations under the License.
 #include <condition_variable>
 #include <mutex>
 #include "tensorflow/core/platform/thread_annotations.h"
+
+//(dleoni) Include the following header to use Hardware Lock Elision (HLE)
+#include <immintrin.h>
+
+//(dleoni) The following two macros respectively start and end a lock hardware elision
+
+#define ACQUIRE_LOCK_HLE(lock) { \
+ while(__atomic_exchange_n(lock, 1, __ATOMIC_ACQUIRE|__ATOMIC_HLE_ACQUIRE)) _mm_pause(); \
+}
+
+#define RELEASE_LOCK_HLE(lock) { \
+ __atomic_store_n(lock, 0, __ATOMIC_RELEASE|__ATOMIC_HLE_RELEASE); \
+}
+
 namespace tensorflow {
 
 #undef mutex_lock

@@ -150,7 +150,7 @@ class OpKernel {
   bool IsLegacyVector(const TensorShape& shape) const {
     return shape.dims() == 1 || (allow_legacy_scalars() && shape.dims() == 0);
   }
-
+ 
  private:
   const NodeDef def_;
   const DataTypeVector input_types_;
@@ -162,7 +162,6 @@ class OpKernel {
   NameRangeMap input_name_map_;
   NameRangeMap output_name_map_;
   bool expensive_;
-
   TF_DISALLOW_COPY_AND_ASSIGN(OpKernel);
 };
 
@@ -1057,6 +1056,9 @@ class OpKernelContext {
   std::vector<int64> device_persistent_alloc_ids() const;
 
   bool input_is_ref(int index) const;
+  
+  // (dleoni) The lock variable to be used in case of HLE in place of GetMutex
+  int lock_var;
 
  private:
   Allocator* get_allocator(AllocatorAttributes attr);
