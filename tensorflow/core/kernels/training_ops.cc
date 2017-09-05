@@ -25,6 +25,7 @@ limitations under the License.
 #include <unsupported/Eigen/CXX11/Tensor>
 
 #include "tm.h"
+#include <cmath>
 
 namespace tensorflow {
 
@@ -406,11 +407,19 @@ class ApplyGradientDescentOp : public OpKernel {
    
     mutex *mutex = GetMutex(ctx, 0);
 
+
+    float* var_pointer = (float*) var.buf_->data();
+    float* alpha_pointer = (float*) alpha.buf_->data();
+    float* delta_pointer = (float*) delta.buf_->data();
+    auto size_tensor = var.NumElements();
     TM_BEGIN(mutex);
 
-    functor::ApplyGradientDescent<Device, T>()(
-        device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
+    //functor::ApplyGradientDescent<Device, T>()(
+    //    device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
 
+    for(int i=0; i < size_tensor; i++) {
+      var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
+    }
     TM_END(mutex);
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
@@ -2296,7 +2305,7 @@ class ApplyAdamOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* ctx) override {
-    auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0, 1, 2});
+    //auto locks = MaybeLockMutexesInOrder(ctx, use_exclusive_lock_, {0, 1, 2});
 
     Tensor var;
     OP_REQUIRES_OK(ctx, GetInputTensor(ctx, 0, use_exclusive_lock_, &var));
@@ -2359,12 +2368,74 @@ class ApplyAdamOp : public OpKernel {
                                 grad.shape().DebugString()));
 
     const Device& device = ctx->template eigen_device<Device>();
-    functor::ApplyAdam<Device, T>()(device, var.flat<T>(), m.flat<T>(),
+    htm_budget = HTM_RETRIES;
+    mutex *mutex1 = GetMutex(ctx, 0); 
+    mutex *mutex2 = GetMutex(ctx, 1); 
+    mutex *mutex3 = GetMutex(ctx, 2); 
+    
+    auto size_var = var.NumElements();
+    auto size_m = m.NumElements();
+    auto size_v = v.NumElements();
+    auto size_grad = grad.NumElements();
+   
+    float *lr_pointer = (float*) lr.buf_->data();
+    float *beta2_power_pointer = (float*) beta2_power.buf_->data();
+    float *beta2_pointer = (float*) beta2.buf_->data();
+    float *beta1_power_pointer = (float*) beta1_power.buf_->data();
+    float *beta1_pointer = (float*) beta1.buf_->data();
+    float *epsilon_pointer = (float*) epsilon.buf_->data();
+    float *var_pointer = (float*) var.buf_->data();
+    float *v_pointer = (float*) v.buf_->data();
+    float *grad_pointer = (float*) grad.buf_->data();
+    float *m_pointer = (float*) m.buf_->data();
+
+
+    TM_BEGIN_ADAM(mutex1, mutex2, mutex3)
+    const float alpha = *lr_pointer * std::sqrt(1 - *beta2_power_pointer) /
+                        (1 - *beta1_power_pointer); 
+    
+    for(int i=0; i < size_m; i++) {
+    	m_pointer[i] += (grad_pointer[i] - m_pointer[i]) * (1 - *beta1_pointer);
+    }
+
+    for(int i=0; i < size_v; i++) {
+	v_pointer[i] += (grad_pointer[i] * grad_pointer[i] - v_pointer[i]) *
+                        (1 - *beta2_pointer); 
+    }
+
+    for(int i=0; i < size_var; i++) {
+	var_pointer[i] -= (m_pointer[i] * alpha) /
+                          std::sqrt(v_pointer[i] + *epsilon_pointer);
+    }
+    TM_END_ADAM(mutex1, mutex2, mutex3)
+
+
+
+//template <typename Device, typename T>
+//struct ApplyAdamNonCuda {
+//  void operator()(const Device& d, typename TTypes<T>::Flat var,
+//                  typename TTypes<T>::Flat m, typename TTypes<T>::Flat v,
+//                  typename TTypes<T>::ConstScalar beta1_power,
+//                  typename TTypes<T>::ConstScalar beta2_power,
+//                  typename TTypes<T>::ConstScalar lr,
+//                  typename TTypes<T>::ConstScalar beta1,
+//                  typename TTypes<T>::ConstScalar beta2,
+//                  typename TTypes<T>::ConstScalar epsilon,
+//                  typename TTypes<T>::ConstFlat grad) {
+//    const T alpha = lr() * Eigen::numext::sqrt(T(1) - beta2_power()) /
+//                    (T(1) - beta1_power());
+//    m.device(d) += (grad - m) * (T(1) - beta1());
+//    v.device(d) += (grad.square() - v) * (T(1) - beta2());
+//    var.device(d) -= (m * alpha) / (v.sqrt() + epsilon());
+//  }
+//};
+
+/*    functor::ApplyAdam<Device, T>()(device, var.flat<T>(), m.flat<T>(),
                                     v.flat<T>(), beta1_power.scalar<T>(),
                                     beta2_power.scalar<T>(), lr.scalar<T>(),
                                     beta1.scalar<T>(), beta2.scalar<T>(),
                                     epsilon.scalar<T>(), grad.flat<T>());
-
+*/
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
 

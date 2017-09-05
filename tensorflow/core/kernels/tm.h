@@ -173,6 +173,66 @@ extern __thread int local_thread_id;
     } \
 };
 
+# define TM_BEGIN_ADAM(mutex1, mutex2, mutex3) { \
+        while (1) { \
+            while (IS_LOCKED(mutex1) || IS_LOCKED(mutex2) || IS_LOCKED(mutex3)) { \
+                __asm__ ( "pause;"); \
+            } \
+            unsigned int status = _xbegin(); \
+            if (status == _XBEGIN_STARTED) { \
+                if (IS_LOCKED(mutex1) || IS_LOCKED(mutex2) || IS_LOCKED(mutex3)) { \
+                    _xabort(30); \
+                } \
+                break; \
+            } \
+            else if (status == _XABORT_CAPACITY) { \
+                stats_array[local_thread_id].capacity_aborts++;\
+                SPEND_BUDGET(&htm_budget); \
+            } else \
+            { \
+                if (status & _XABORT_CONFLICT) {\
+                        stats_array[local_thread_id].conflict_aborts++;\
+                }\
+                else if (status & _XABORT_EXPLICIT) {\
+                        stats_array[local_thread_id].explicit_aborts++;\
+                }\
+                else if (status & _XABORT_NESTED) {\
+                        stats_array[local_thread_id].nested_aborts++;\
+                }\
+                else if (status & _XABORT_DEBUG) {\
+                        stats_array[local_thread_id].debug_aborts++;\
+                }\
+                else if (status & _XABORT_RETRY) {\
+                        stats_array[local_thread_id].retry_aborts++;\
+                }\
+                else {\
+                        stats_array[local_thread_id].other_aborts++;\
+                }\
+                htm_budget--; \
+            } \
+            stats_array[local_thread_id].aborts++; \
+            if (htm_budget <= 0) {   \
+		mutex1->lock(); \
+                mutex2->lock(); \
+                mutex3->lock(); \
+		break; \
+            } \
+        } \
+};
+
+
+# define TM_END_ADAM(mutex1, mutex2, mutex3){ \
+    if (htm_budget > 0) { \
+        _xend(); \
+        stats_array[local_thread_id].commits++; \
+    } else {    \
+        mutex1->unlock(); \
+        mutex2->unlock(); \
+        mutex3->unlock(); \
+        stats_array[local_thread_id].commits_with_lock++; \
+    } \
+};
+
 #    define TM_BEGIN_RO()                 TM_BEGIN(0)
 #    define TM_RESTART()                  _xabort(0xab);;
 #    define TM_EARLY_RELEASE(var)
