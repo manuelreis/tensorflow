@@ -1516,12 +1516,19 @@ cc_inc_library(
     hdrs = ["tm.h"]
 )
 
+#cc_library(
+#    name = "tiny",
+#    hdrs = ["tiny.h", "stm.h", "mod_ab.h"],
+#    linkopts = ["-L/home/mreis/tinySTM-1.0.5/lib","-lstm"]
+#)
+
 tf_kernel_library(
     name = "resource_variable_ops",
     srcs = ["resource_variable_ops.cc"],
     copts = ["-mrtm"],
     deps = [
         "htm",
+        "//tensorflow/core:tiny",
         ":bounds_check",
         ":dense_update_ops",
         ":gather_functor",
@@ -3431,6 +3438,7 @@ tf_kernel_library(
     copts = ["-mrtm"],
     deps = [
         "htm",
+        "//tensorflow/core:tiny",
         ":bounds_check",
         ":variable_ops",
         "//tensorflow/core:framework",

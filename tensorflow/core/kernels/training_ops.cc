@@ -24,6 +24,7 @@ limitations under the License.
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/CXX11/Tensor>
 
+#include "tensorflow/core/tiny.h"
 #include "tm.h"
 #include <cmath>
 
@@ -412,15 +413,22 @@ class ApplyGradientDescentOp : public OpKernel {
     float* alpha_pointer = (float*) alpha.buf_->data();
     float* delta_pointer = (float*) delta.buf_->data();
     auto size_tensor = var.NumElements();
-    TM_BEGIN(mutex);
-
+    
+    //TM_BEGIN(mutex);
+    TM_START(0, RW);
     //functor::ApplyGradientDescent<Device, T>()(
     //    device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
 
     for(int i=0; i < size_tensor; i++) {
-      var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
+      float var_cpy = (float) TM_LOAD(&var_pointer[i]); 
+      float alpha_cpy = (float) TM_LOAD(alpha_pointer);
+      float delta_cpy = (float) TM_LOAD(&delta_pointer[i]);
+      var_cpy -= delta_cpy * alpha_cpy;
+      TM_STORE(&var_pointer[i], var_cpy);
+      //var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
     }
-    TM_END(mutex);
+    //TM_END(mutex);
+    TM_COMMIT;
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
 

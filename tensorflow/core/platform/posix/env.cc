@@ -34,6 +34,14 @@ limitations under the License.
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/posix/posix_file_system.h"
 
+#include <cstdlib>
+#include "tensorflow/core/tiny.h"
+
+void exit_group_handler () {
+     printf("I am exiting\n");
+     stm_exit_thread();
+}
+
 namespace tensorflow {
 
 namespace {
@@ -43,8 +51,15 @@ class StdThread : public Thread {
   // name and thread_options are both ignored.
   StdThread(const ThreadOptions& thread_options, const string& name,
             std::function<void()> fn)
-      : thread_(fn) {}
-  ~StdThread() { thread_.join(); }
+      : thread_(fn) {
+        printf("Start thread\n");
+        stm_init_thread();
+        std::atexit(exit_group_handler);
+      }
+  
+  ~StdThread() { 
+      thread_.join();
+  }
 
  private:
   std::thread thread_;

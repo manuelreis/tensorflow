@@ -211,6 +211,13 @@ tf_proto_library(
     visibility = ["//visibility:public"],
 )
 
+cc_library(
+    name = "tiny",
+    hdrs = ["tiny.h", "stm.h", "mod_ab.h", "mod_stats.h"],
+    linkopts = ["-L/home/mreis/tinySTM-1.0.5/lib","-lstm"],
+    visibility = ["//visibility:public"]
+)
+
 # Minimal lib so that tools used for mobile compilation
 # don't have to depend on lib/platformlib.
 cc_library(
@@ -305,6 +312,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":lib_internal",
+        ":tiny",
     ],
 )
 
@@ -1266,6 +1274,7 @@ cc_library(
         "//conditions:default": ["-ldl"],
     }),
     deps = tf_additional_lib_deps() + [
+        ":tiny",
         ":lib_hash_crc32c_accelerate_internal",
         ":lib_proto_parsing",
         ":protos_all_cc",

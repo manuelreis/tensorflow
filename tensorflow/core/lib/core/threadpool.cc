@@ -25,6 +25,8 @@ limitations under the License.
 #include "tensorflow/core/platform/tracing.h"
 #include "tensorflow/core/platform/types.h"
 
+#include "tensorflow/core/tiny.h"
+
 namespace tensorflow {
 namespace thread {
 
@@ -54,6 +56,8 @@ struct EigenEnvironment {
       // Set the processor rounding mode to ROUND TO NEAREST.
       port::ScopedSetRound round(FE_TONEAREST);
       f();
+      printf("Thread End");
+      stm_exit_thread();
     });
   }
 

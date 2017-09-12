@@ -30,6 +30,9 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/util/util.h"
 
+
+#include "tensorflow/core/tiny.h"
+#include "tensorflow/core/mod_stats.h"
 #include "tm.h"
 
 __thread int local_thread_id;
@@ -335,7 +338,30 @@ class ResourceGatherOp : public OpKernel {
   explicit ResourceGatherOp(OpKernelConstruction* c) : OpKernel(c) {}
 
   void Compute(OpKernelContext* c) override {
-    TM_SHUTDOWN();
+    //TM_SHUTDOWN();
+    char* param = "global_nb_commits";
+    unsigned long value;
+    if(!stm_get_global_stats(param, &value)){
+        printf("mreis: Error getting param: %s\n", param);
+    } else {
+        printf("Total commits: %lu\n", value);
+    }
+    param = "global_nb_aborts";
+    if(!stm_get_global_stats(param, &value)){
+        printf("mreis: Error getting param: %s\n", param);
+    } else {
+        printf("Total aborts: %lu\n", value);
+    }
+    param = "global_max_retries";
+    if(!stm_get_global_stats(param, &value)){
+        printf("mreis: Error getting param: %s\n", param);
+    } else {
+        printf("Max number consecutive aborts: %lu\n", value);
+    }
+    TM_EXIT;
+    
+    
+    
     Var* v = nullptr;
     OP_REQUIRES_OK(c, LookupResource(c, HandleFromInput(c, 0), &v));
     mutex_lock ml(*v->mu());

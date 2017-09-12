@@ -43,6 +43,9 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/public/session.h"
 
+#include "tensorflow/core/tiny.h"
+#include "tensorflow/core/mod_stats.h"
+
 namespace tensorflow {
 
 class CostModel;

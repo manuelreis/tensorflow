@@ -4,4 +4,7 @@ bazel build -c opt -c dbg --verbose_failures --strip=never  //tensorflow/tools/p
 rm -rf ~/tmp/tensorflow_pkg/
 bazel-bin/tensorflow/tools/pip_package/build_pip_package ~/tmp/tensorflow_pkg
 /usr/bin/yes | pip uninstall tensorflow
-pip install --user ~/tmp/tensorflow_pkg/tensorflow-1.1.0rc0-cp27-cp27mu-linux_x86_64.whl
+#pip install --user ~/tmp/tensorflow_pkg/tensorflow-1.1.0rc0-cp27-cp27mu-linux_x86_64.whl
+rm -rf ~/tensorflow-tinystm
+pip install ~/tmp/tensorflow_pkg/tensorflow_tinystm-1.1.0rc0-cp27-cp27mu-linux_x86_64.whl -t ~/tensorflow-tinystm
+
