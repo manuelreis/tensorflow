@@ -452,6 +452,9 @@ struct TensorValue {
 
   mutex* mutex_if_ref;  // nullptr if not a ref, != nullptr if a ref
   Tensor* tensor;
+  
+  //(dleoni) Add an integer variable to be used as lock in case of Hardware Lock Elision (HLE)
+  int lock_var;
 };
 
 class OpKernelContext {
@@ -1020,6 +1023,9 @@ class OpKernelContext {
   Tensor* mutable_output(int index);
   void set_output(int index, const Tensor& tensor);
   mutex* input_ref_mutex(int index);
+  
+  // (dleoni) Declaration of the function that returns an integer to be used as lock in case of HLE
+  const int* input_ref_hle_lock(int index);
   void set_output_ref(int index, mutex* mu, Tensor* tensor_for_ref);
   TensorValue release_output(int index);
 
@@ -1318,6 +1324,16 @@ inline mutex* OpKernelContext::input_ref_mutex(int index) {
   DCHECK_LT(index, num_inputs());
   DCHECK(input_is_ref(index));
   return (*params_->inputs)[index].mutex_if_ref;
+}
+
+// (dleoni) Get the pointer to the integer variable from the input (TensorVlue) used as lock in case of HLE
+
+inline const int* OpKernelContext::input_ref_hle_lock(int index) {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, num_inputs());
+  DCHECK(input_is_ref(index));
+  const int *lock_var = &((*params_->inputs)[index].lock_var);
+  return lock_var;
 }
 
 inline void OpKernelContext::NotifyUseOfPersistentTensor(const Tensor& t) {

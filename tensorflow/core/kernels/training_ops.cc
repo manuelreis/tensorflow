@@ -22,6 +22,8 @@ limitations under the License.
 #include "tensorflow/core/kernels/bounds_check.h"
 #include "tensorflow/core/kernels/variable_ops.h"
 
+extern __thread unsigned local_thread_id;
+
 namespace tensorflow {
 
 using CPUDevice = Eigen::ThreadPoolDevice;
@@ -308,6 +310,12 @@ mutex* GetMutex(OpKernelContext* ctx, int input) {
   return ctx->input_ref_mutex(input);
 }
 
+// (dleoni) Helper function to get a pointer to the integer lock variable of an input tensor given a context containing the input itself; to be used for HLE
+
+int* GetHleLock(OpKernelContext* ctx, int input) {
+  return ctx->input_ref_hle_lock(input);
+}
+
 // MaybeLockMutexesInOrder is a helper function to acquire mutexes in address
 // order to mitigate deadlock.  Returns a vector of acquired mutexes.  Safe to
 // pass duplicates - will only lock each distinct mutex once.  If do_lock is
@@ -401,14 +409,15 @@ class ApplyGradientDescentOp : public OpKernel {
 
     const Device& device = ctx->template eigen_device<Device>();
     
-    //(dleoni) Acquire the lock using HLE before entering the critical section
-    ACQUIRE_LOCK_HLE(&(ctx->lock_var));
-    
+    //(dleoni) Acquire the lock of the Tensor using HLE before entering the critical section
+    int* lock_var = GetHleLock(ctx, 0);
+    ACQUIRE_LOCK_HLE(lock_var);
+    printf ("thread %d -> lock address:%p\n", local_thread_id, lock_var);
     functor::ApplyGradientDescent<Device, T>()(
         device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
 
     //(dleoni) Critical section finishes here: release the lock using HLE
-    RELEASE_LOCK_HLE(&(ctx->lock_var));
+    RELEASE_LOCK_HLE(lock_var);
 
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
