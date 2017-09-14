@@ -415,6 +415,8 @@ class ApplyGradientDescentOp : public OpKernel {
     auto size_tensor = var.NumElements();
     
     //TM_BEGIN(mutex);
+    //stm_init_thread();
+    printf("Before TM_start\n");
     TM_START(0, RW);
     //functor::ApplyGradientDescent<Device, T>()(
     //    device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
@@ -429,6 +431,16 @@ class ApplyGradientDescentOp : public OpKernel {
     }
     //TM_END(mutex);
     TM_COMMIT;
+    printf("After TM_commit\n");
+
+//     char *param = "nb_commits";
+//     unsigned int val;
+//     if(!stm_get_stats(param, &val)) {
+//        printf("mreis train_ops error getting param: %s\n", param);
+//     } else {
+//        printf("mreis train_ops param: %s value: %lu\n", param, val);
+//     }
+
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
 

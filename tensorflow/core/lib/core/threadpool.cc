@@ -25,7 +25,29 @@ limitations under the License.
 #include "tensorflow/core/platform/tracing.h"
 #include "tensorflow/core/platform/types.h"
 
+#include <cstdlib>
+#include <csignal>
 #include "tensorflow/core/tiny.h"
+#include <list>
+#include <pthread.h>
+
+void sig_urg_handler (int signal) {
+     
+     /*stm_tx_t *tx = tls_get_tx()
+     if(tx == NULL) {
+        return
+     }*/
+     
+     printf("I am exiting\n");
+     char *param = "nb_commits";
+     unsigned int val;
+     if(!stm_get_stats(param, &val)) {
+        printf("mreis exit_grp_handler error getting param: %s\n", param);
+     } else {
+        printf("mreis exit_grp_handler param: %s value: %lu\n", param, val);
+     }
+     stm_exit_thread();
+}
 
 namespace tensorflow {
 namespace thread {
@@ -55,9 +77,10 @@ struct EigenEnvironment {
       port::ScopedFlushDenormal flush;
       // Set the processor rounding mode to ROUND TO NEAREST.
       port::ScopedSetRound round(FE_TONEAREST);
+      printf("Start thread\n");
+      stm_init_thread();
+      std::signal(SIGURG, sig_urg_handler);
       f();
-      printf("Thread End");
-      stm_exit_thread();
     });
   }
 

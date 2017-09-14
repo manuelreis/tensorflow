@@ -116,8 +116,8 @@ def tf_workspace(path_prefix = "", tf_repo_name = ""):
       name = "eigen_archive",
       urls = [
           "http://bazel-mirror.storage.googleapis.com/bitbucket.org/eigen/eigen/get/deff8b280204.tar.gz",
-          "https://bitbucket.org/eigen/eigen/get/deff8b280204.tar.gz",
-          #"http://0.0.0.0:8000/deff8b280204.tar.gz",
+          "https://bitbucket.org/eigen/eigen/get/deff8b280204.tar.gz"
+          #"http://0.0.0.0:8000/deff8b280204.tar.gz"
       ],
       #sha256 = "a39834683eb5bdb9a7434f0ab3621d2cbc3b07e8002db6de101e45ec536723eb",
       strip_prefix = "eigen-eigen-deff8b280204",

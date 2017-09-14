@@ -34,11 +34,64 @@ limitations under the License.
 #include "tensorflow/core/tiny.h"
 #include "tensorflow/core/mod_stats.h"
 #include "tm.h"
+#include "signal.h"
+#include <linux/unistd.h>
+#include <csignal>
+#include <iostream>
+#include <string.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <stdlib.h>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <dirent.h>
+#include <list>
+#include <sys/syscall.h>
+#include <errno.h>
 
 __thread int local_thread_id;
 __thread int htm_budget;
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
 
+int get_tgid(int pid){
+  std::ifstream t("/proc/" + std::to_string(pid) + "/status");
+  std::stringstream buffer;
+  buffer << t.rdbuf();
+  std::string line;
+  std::size_t found;
+  std::string tgid;
+  while(std::getline(buffer, line, '\n')){
+    found = line.find("Tgid:");
+    if(found != std::string::npos){
+      tgid = line.substr(6);
+      break;
+    }
+  }
+
+  return std::stoi(tgid);
+}
+
+
+std::list<int> all_threads(int pid){
+    std::list<int> all_threads;
+    auto PATH = ("/proc/" + std::to_string(pid) + "/task").c_str();
+   //const char* PATH = "";
+    DIR *dir = opendir(PATH);
+    struct dirent *entry = readdir(dir);
+    while (entry != NULL) {
+        if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")){
+            int thread_id = std::stoi(std::string(entry->d_name));
+            if(thread_id != pid) {
+                all_threads.push_back(thread_id);
+            }
+        }
+        entry = readdir(dir);
+    }
+    closedir(dir);
+    return all_threads;
+}
 
 namespace tensorflow {
 
@@ -339,6 +392,16 @@ class ResourceGatherOp : public OpKernel {
 
   void Compute(OpKernelContext* c) override {
     //TM_SHUTDOWN();
+    int pid = getpid();
+    int tgid = get_tgid(pid);
+    std::list<int> threads = all_threads(pid);
+    for(int thread_id : threads) {
+        int success = syscall(SYS_tgkill, tgid, thread_id, SIGURG);
+        if(success != 0) {
+            std::cerr << "Error on tgkill with thread_id: " << thread_id << " and error code: " << errno << std::endl;
+        }
+    }
+    //std::raise(SIGURG);
     char* param = "global_nb_commits";
     unsigned long value;
     if(!stm_get_global_stats(param, &value)){

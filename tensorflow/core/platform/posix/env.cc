@@ -37,10 +37,17 @@ limitations under the License.
 #include <cstdlib>
 #include "tensorflow/core/tiny.h"
 
-void exit_group_handler () {
-     printf("I am exiting\n");
-     stm_exit_thread();
-}
+//void exit_group_handler () {
+//     printf("I am exiting\n");
+//     char *param = "nb_commits";
+//     unsigned int val;
+//     if(!stm_get_stats(param, &val)) {
+//        printf("mreis exit_grp_handler error getting param: %s\n", param);
+//     } else {
+//        printf("mreis exit_grp_handler param: %s value: %lu\n", param, val);
+//     }
+//     stm_exit_thread();
+//}
 
 namespace tensorflow {
 
@@ -52,9 +59,7 @@ class StdThread : public Thread {
   StdThread(const ThreadOptions& thread_options, const string& name,
             std::function<void()> fn)
       : thread_(fn) {
-        printf("Start thread\n");
-        stm_init_thread();
-        std::atexit(exit_group_handler);
+          //std::atexit(exit_group_handler);
       }
   
   ~StdThread() { 
