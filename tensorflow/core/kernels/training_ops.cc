@@ -412,15 +412,16 @@ class ApplyGradientDescentOp : public OpKernel {
     float* alpha_pointer = (float*) alpha.buf_->data();
     float* delta_pointer = (float*) delta.buf_->data();
     auto size_tensor = var.NumElements();
-    TM_BEGIN(mutex);
+    //TM_BEGIN(mutex);
 
     //functor::ApplyGradientDescent<Device, T>()(
     //    device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
-
-    for(int i=0; i < size_tensor; i++) {
-      var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
+    __transaction_atomic {
+        for(int i=0; i < size_tensor; i++) {
+          var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
+        }
     }
-    TM_END(mutex);
+    //TM_END(mutex);
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
 
