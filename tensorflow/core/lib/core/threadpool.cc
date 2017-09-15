@@ -33,20 +33,22 @@ limitations under the License.
 
 void sig_urg_handler (int signal) {
      
-     /*stm_tx_t *tx = tls_get_tx()
-     if(tx == NULL) {
-        return
-     }*/
-     
-     printf("I am exiting\n");
      char *param = "nb_commits";
      unsigned int val;
      if(!stm_get_stats(param, &val)) {
         printf("mreis exit_grp_handler error getting param: %s\n", param);
      } else {
-        printf("mreis exit_grp_handler param: %s value: %lu\n", param, val);
+        printf("%s value: %lu\n", param, val);
      }
+     param = "nb_aborts";
+     if(!stm_get_stats(param, &val)) {
+        printf("mreis exit_grp_handler error getting param: %s\n", param);
+     } else {
+        printf("%s value: %lu\n", param, val);
+     }
+     printf("I am about to do stm_exit\n");
      stm_exit_thread();
+     printf("I did stm_exit\n");
 }
 
 namespace tensorflow {

@@ -416,7 +416,6 @@ class ApplyGradientDescentOp : public OpKernel {
     
     //TM_BEGIN(mutex);
     //stm_init_thread();
-    printf("Before TM_start\n");
     TM_START(0, RW);
     //functor::ApplyGradientDescent<Device, T>()(
     //    device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
@@ -429,9 +428,8 @@ class ApplyGradientDescentOp : public OpKernel {
       TM_STORE(&var_pointer[i], var_cpy);
       //var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
     }
-    //TM_END(mutex);
-    TM_COMMIT;
-    printf("After TM_commit\n");
+   //TM_END(mutex);
+   TM_COMMIT;
 
 //     char *param = "nb_commits";
 //     unsigned int val;

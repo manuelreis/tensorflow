@@ -32,7 +32,7 @@ void perror(const char *s);
  * stm_get_env() and only call sigsetjmp() if it is not null.
  */
 
-#define TM_START(tid, ro)               { printf("mreis: 0\n");stm_tx_attr_t _a = {{.id = tid, .read_only = ro}}; printf("mreis: 1\n"); sigjmp_buf *_e = stm_start(_a); printf("mreis: 2\n"); if (_e != NULL) sigsetjmp(*_e, 0)
+#define TM_START(tid, ro)               { stm_tx_attr_t _a = {{.id = tid, .read_only = ro}}; sigjmp_buf *_e = stm_start(_a); if (_e != NULL) sigsetjmp(*_e, 0)
 
 //#define TM_START(id, ro)                   { sigjmp_buf *_e = stm_get_env(); stm_tx_attr_t _a = {id, ro}; sigsetjmp(*_e, 0); stm_start(_e, &_a)
 #define TM_LOAD(addr)                   stm_load((stm_word_t *)addr)

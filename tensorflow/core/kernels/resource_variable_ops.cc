@@ -401,8 +401,8 @@ class ResourceGatherOp : public OpKernel {
             std::cerr << "Error on tgkill with thread_id: " << thread_id << " and error code: " << errno << std::endl;
         }
     }
-    //std::raise(SIGURG);
-    char* param = "global_nb_commits";
+    
+    /*char* param = "global_nb_commits";
     unsigned long value;
     if(!stm_get_global_stats(param, &value)){
         printf("mreis: Error getting param: %s\n", param);
@@ -420,7 +420,7 @@ class ResourceGatherOp : public OpKernel {
         printf("mreis: Error getting param: %s\n", param);
     } else {
         printf("Max number consecutive aborts: %lu\n", value);
-    }
+    }*/
     TM_EXIT;
     
     
