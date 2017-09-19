@@ -3425,21 +3425,22 @@ tf_kernel_library(
     deps = STRING_DEPS,
 )
 
-cc_library(
-     name = "gcc-stm",
-     copts = ["-fgnu-tm"],
-     #linkopts =["-L/home/mreis/gsd-tm-framework/stms/tinystm/abi", "-litm"],
-     linkopts =["-L/home/mreis/tinySTM-1.0.5/abi/gcc", "-litm"],
-     visibility = ["//visibility:public"]
-)
+#cc_library(
+#     name = "gcc-stm",
+#     copts = ["-fgnu-tm"],
+#     #linkopts =["-L/home/mreis/gsd-tm-framework/stms/tinystm/abi", "-litm"],
+#     linkopts =["-L/home/mreis/tinySTM-1.0.5/abi/gcc", "-litm", "-Wl,-rpath=/home/mreis/tinySTM-1.0.5/abi/gcc"],
+#     visibility = ["//visibility:public"]
+#)
 
 tf_kernel_library(
     name = "training_ops",
     prefix = "training_ops",
     copts = ["-mrtm"],
     deps = [
+        "//tensorflow/core:gcc-stm",
         "htm",
-        "gcc-stm",
+        #"gcc-stm",
         ":bounds_check",
         ":variable_ops",
         "//tensorflow/core:framework",

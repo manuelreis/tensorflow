@@ -211,6 +211,14 @@ tf_proto_library(
     visibility = ["//visibility:public"],
 )
 
+cc_library(
+     name = "gcc-stm",
+     copts = ["-fgnu-tm"],
+     #linkopts =["-L/home/mreis/gsd-tm-framework/stms/tinystm/abi", "-litm"],
+     linkopts =["-L/home/mreis/tinySTM-1.0.5/abi/gcc", "-litm", "-Wl,-rpath=/home/mreis/tinySTM-1.0.5/abi/gcc"],
+     visibility = ["//visibility:public"]
+)
+
 # Minimal lib so that tools used for mobile compilation
 # don't have to depend on lib/platformlib.
 cc_library(
@@ -305,6 +313,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":lib_internal",
+        ":gcc-stm"
     ],
 )
 
@@ -1273,6 +1282,7 @@ cc_library(
         "//tensorflow/core/platform/default/build_config:platformlib",
         "@snappy",
         "@zlib_archive//:zlib",
+        ":gcc-stm"
     ],
 )
 
