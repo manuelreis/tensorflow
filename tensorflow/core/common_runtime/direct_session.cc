@@ -126,7 +126,7 @@ class DirectSessionFactory : public SessionFactory {
   }
 
   Session* NewSession(const SessionOptions& options) override {
-    printf("mreis: init\n");
+    //printf("mreis: init\n");
     TM_INIT;
     mod_stats_init();
     // Must do this before the CPU allocator is created.

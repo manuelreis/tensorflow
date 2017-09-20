@@ -46,9 +46,9 @@ void sig_urg_handler (int signal) {
      } else {
         printf("%s value: %lu\n", param, val);
      }
-     printf("I am about to do stm_exit\n");
+     //printf("I am about to do stm_exit\n");
      stm_exit_thread();
-     printf("I did stm_exit\n");
+     //printf("I did stm_exit\n");
 }
 
 namespace tensorflow {
@@ -79,7 +79,7 @@ struct EigenEnvironment {
       port::ScopedFlushDenormal flush;
       // Set the processor rounding mode to ROUND TO NEAREST.
       port::ScopedSetRound round(FE_TONEAREST);
-      printf("Start thread\n");
+      //printf("Start thread\n");
       stm_init_thread();
       std::signal(SIGURG, sig_urg_handler);
       f();
