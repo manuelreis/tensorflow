@@ -1,6 +1,6 @@
 #!/bin/bash
 
-bazel build -c opt -c dbg --verbose_failures --strip=never --cxxopt="-fgnu-tm" //tensorflow/tools/pip_package:build_pip_package
+bazel build -c opt -c dbg --verbose_failures --strip=never --cxxopt="-fgnu-tm" --copt="-Dalways_inline=deprecated" --copt="-L/home/mreis/tinySTM-1.0.5/abi/gcc" --copt="-litm" --copt="-Wl,-rpath=/home/mreis/tinySTM-1.0.5/abi/gcc"  //tensorflow/tools/pip_package:build_pip_package
 rm -rf ~/tmp/tensorflow_pkg/
 bazel-bin/tensorflow/tools/pip_package/build_pip_package ~/tmp/tensorflow_pkg
 /usr/bin/yes | pip uninstall tensorflow
