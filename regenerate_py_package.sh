@@ -1,6 +1,6 @@
 #!/bin/bash
 
-bazel build -c opt -c dbg --verbose_failures --strip=never  //tensorflow/tools/pip_package:build_pip_package
+bazel build -c opt -c dbg --linkopt="-Wl,--rpath=/home/dleoni/glibc_install/lib:/usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu" --linkopt="-Wl,--dynamic-linker=/home/dleoni/glibc_install/lib/ld-linux-x86-64.so.2" --verbose_failures --strip=never  //tensorflow/tools/pip_package:build_pip_package
 rm -rf ~/tmp/tensorflow_pkg/
 bazel-bin/tensorflow/tools/pip_package/build_pip_package ~/tmp/tensorflow_pkg
 /usr/bin/yes | pip uninstall tensorflow
