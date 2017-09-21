@@ -454,7 +454,7 @@ struct TensorValue {
   Tensor* tensor;
   
   //(dleoni) Add an integer variable to be used as lock in case of Hardware Lock Elision (HLE)
-  int lock_var;
+  mutable int lock_var;
 };
 
 class OpKernelContext {
@@ -1025,7 +1025,7 @@ class OpKernelContext {
   mutex* input_ref_mutex(int index);
   
   // (dleoni) Declaration of the function that returns an integer to be used as lock in case of HLE
-  const int* input_ref_hle_lock(int index);
+  int* input_ref_hle_lock(int index);
   void set_output_ref(int index, mutex* mu, Tensor* tensor_for_ref);
   TensorValue release_output(int index);
 
@@ -1064,7 +1064,7 @@ class OpKernelContext {
   bool input_is_ref(int index) const;
   
   // (dleoni) The lock variable to be used in case of HLE in place of GetMutex
-  int lock_var;
+  //int lock_var;
 
  private:
   Allocator* get_allocator(AllocatorAttributes attr);
@@ -1328,11 +1328,11 @@ inline mutex* OpKernelContext::input_ref_mutex(int index) {
 
 // (dleoni) Get the pointer to the integer variable from the input (TensorVlue) used as lock in case of HLE
 
-inline const int* OpKernelContext::input_ref_hle_lock(int index) {
+inline int* OpKernelContext::input_ref_hle_lock(int index) {
   DCHECK_GE(index, 0);
   DCHECK_LT(index, num_inputs());
   DCHECK(input_is_ref(index));
-  const int *lock_var = &((*params_->inputs)[index].lock_var);
+  int *lock_var = &((*params_->inputs)[index].lock_var);
   return lock_var;
 }
 

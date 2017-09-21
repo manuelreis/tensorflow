@@ -412,10 +412,11 @@ class ApplyGradientDescentOp : public OpKernel {
     //(dleoni) Acquire the lock of the Tensor using HLE before entering the critical section
     int* lock_var = GetHleLock(ctx, 0);
     ACQUIRE_LOCK_HLE(lock_var);
+    //mutex *lock_var = GetMutex(ctx, 0);
     printf ("thread %d -> lock address:%p\n", local_thread_id, lock_var);
     functor::ApplyGradientDescent<Device, T>()(
         device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
-
+    //lock_var->unlock();
     //(dleoni) Critical section finishes here: release the lock using HLE
     RELEASE_LOCK_HLE(lock_var);
 
