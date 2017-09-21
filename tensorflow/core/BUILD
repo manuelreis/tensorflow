@@ -213,7 +213,7 @@ tf_proto_library(
 
 cc_library(
     name = "tiny",
-    hdrs = ["tiny.h", "stm.h", "mod_ab.h", "mod_stats.h"],
+    hdrs = ["tiny.h", "stm.h", "mod_ab.h", "mod_stats.h", "wrappers.h"],
     linkopts = ["-L/home/mreis/tinySTM-1.0.5/lib","-lstm"],
     visibility = ["//visibility:public"]
 )

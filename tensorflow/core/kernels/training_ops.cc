@@ -421,11 +421,11 @@ class ApplyGradientDescentOp : public OpKernel {
     //    device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
 
     for(int i=0; i < size_tensor; i++) {
-      float var_cpy = (float) TM_LOAD(&var_pointer[i]); 
-      float alpha_cpy = (float) TM_LOAD(alpha_pointer);
-      float delta_cpy = (float) TM_LOAD(&delta_pointer[i]);
+      float var_cpy = (float) TM_LOAD_FLOAT(var_pointer[i]); 
+      float alpha_cpy = (float) TM_LOAD_FLOAT(*alpha_pointer);
+      float delta_cpy = (float) TM_LOAD_FLOAT(delta_pointer[i]);
       var_cpy -= delta_cpy * alpha_cpy;
-      TM_STORE(&var_pointer[i], var_cpy);
+      TM_STORE_FLOAT(var_pointer[i], var_cpy);
       //var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
     }
    //TM_END(mutex);

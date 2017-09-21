@@ -25,6 +25,7 @@ void perror(const char *s);
 
 #include "stm.h"
 #include "mod_ab.h"
+#include "wrappers.h"
 
 /*
  * Useful macros to work with transactions. Note that, to use nested
@@ -35,6 +36,8 @@ void perror(const char *s);
 #define TM_START(tid, ro)               { stm_tx_attr_t _a = {{.id = tid, .read_only = ro}}; sigjmp_buf *_e = stm_start(_a); if (_e != NULL) sigsetjmp(*_e, 0)
 
 //#define TM_START(id, ro)                   { sigjmp_buf *_e = stm_get_env(); stm_tx_attr_t _a = {id, ro}; sigsetjmp(*_e, 0); stm_start(_e, &_a)
+#define TM_LOAD_FLOAT(var)              stm_load_float((volatile float*)(void *)&(var))
+#define TM_STORE_FLOAT(var, val)        stm_store_float((volatile float*)(void *)&(var), val)
 #define TM_LOAD(addr)                   stm_load((stm_word_t *)addr)
 #define TM_STORE(addr, value)           stm_store((stm_word_t *)addr, (stm_word_t)value)
 #define TM_COMMIT                       stm_commit(); }
