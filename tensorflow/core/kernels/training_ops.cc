@@ -403,7 +403,6 @@ class ApplyGradientDescentOp : public OpKernel {
 
     const Device& device = ctx->template eigen_device<Device>();
     
-    htm_budget = HTM_RETRIES;
    
     mutex *mutex = GetMutex(ctx, 0);
 
@@ -412,16 +411,24 @@ class ApplyGradientDescentOp : public OpKernel {
     float* alpha_pointer = (float*) alpha.buf_->data();
     float* delta_pointer = (float*) delta.buf_->data();
     auto size_tensor = var.NumElements();
-    //TM_BEGIN(mutex);
 
     //functor::ApplyGradientDescent<Device, T>()(
     //    device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
-    __transaction_atomic {
+    const auto CAPACITY_LIMIT = 5632;
+    if(size_tensor >= CAPACITY_LIMIT) {
+        __transaction_atomic {
+            for(int i=0; i < size_tensor; i++) {
+              var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
+            }
+        }
+    } else {
+        htm_budget = HTM_RETRIES;
+        TM_BEGIN(mutex);
         for(int i=0; i < size_tensor; i++) {
           var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
         }
+        TM_END(mutex);
     }
-    //TM_END(mutex);
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
 
