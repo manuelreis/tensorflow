@@ -52,7 +52,7 @@ class Pool {
   //
   // This method is thread-safe.
   SmartPtr Allocate() {
-    tensorflow::mutex_lock lock(mu_);
+    tensorflow::mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     T* ptr;
     if (!xs_.empty()) {
       ptr = std::move(xs_.back()).release();
@@ -70,7 +70,7 @@ class Pool {
   //
   // This method is thread-safe.
   void Deallocate(T* ptr) {
-    tensorflow::mutex_lock lock(mu_);
+    tensorflow::mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     xs_.push_back(std::unique_ptr<T>(ptr));
   }
 

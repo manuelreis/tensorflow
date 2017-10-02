@@ -35,7 +35,7 @@ class CostModelManager {
   typedef CostModelMap::iterator CostModelMapIter;
 
   void ExportCostModels(CostModelMap* cost_models) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     *cost_models = cost_models_;
   }
 

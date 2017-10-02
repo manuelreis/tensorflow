@@ -41,7 +41,7 @@ void CudaPlatform::InspectNumaNodes() {
   // examine their device descriptions to see their bus assignments.
   static bool initialized = false;
   static mutex numa_mutex(LINKER_INITIALIZED);
-  mutex_lock lock(numa_mutex);
+  mutex_lock lock(numa_mutex, __PRETTY_FUNCTION__);
   if (initialized) {
     return;
   }
@@ -127,7 +127,7 @@ port::StatusOr<StreamExecutor*> CudaPlatform::ExecutorForDeviceWithPluginConfig(
 
 port::StatusOr<StreamExecutor*> CudaPlatform::GetExecutor(
     const StreamExecutorConfig& config) {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
 
   port::StatusOr<StreamExecutor*> status = executor_cache_.Get(config);
   if (status.ok()) {

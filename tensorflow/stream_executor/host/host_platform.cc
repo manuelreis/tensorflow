@@ -63,7 +63,7 @@ port::StatusOr<StreamExecutor*> HostPlatform::ExecutorForDeviceWithPluginConfig(
 
 port::StatusOr<StreamExecutor*> HostPlatform::GetExecutor(
     const StreamExecutorConfig& config) {
-  mutex_lock lock(executors_mutex_);
+  mutex_lock lock(executors_mutex_, __PRETTY_FUNCTION__);
 
   port::StatusOr<StreamExecutor*> status = executor_cache_.Get(config);
   if (status.ok()) {

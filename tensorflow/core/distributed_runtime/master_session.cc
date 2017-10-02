@@ -149,7 +149,7 @@ class MasterSession::ReffedClientGraph : public core::RefCounted {
             &req, resp, [step_id, ss, resp, &scoped_mu, &waiting_for,
                          &all_done](const Status& s) {
               {
-                mutex_lock l(scoped_mu);
+                mutex_lock l(scoped_mu, __PRETTY_FUNCTION__);
                 if (s.ok()) {
                   for (auto& lss : resp->step()) {
                     if (step_id != lss.step_id()) {
@@ -291,7 +291,7 @@ class MasterSession::ReffedClientGraph : public core::RefCounted {
 Status MasterSession::ReffedClientGraph::RegisterPartitions(
     const PartitionOptions& popts, const FunctionDefLibrary& func_def_lib) {
   {  // Ensure register once.
-    mu_.lock();
+    mu_.lock(__PRETTY_FUNCTION__);
     if (!init_started_) {
       init_started_ = true;
       mu_.unlock();
@@ -308,13 +308,13 @@ Status MasterSession::ReffedClientGraph::RegisterPartitions(
       }
       stats_publisher_->PublishGraphProto(graph_defs_for_publishing);
       s = DoRegisterPartitions(popts, func_def_lib, std::move(graph_defs));
-      mu_.lock();
+      mu_.lock(__PRETTY_FUNCTION__);
       init_result_ = s;
       init_done_.Notify();
     } else {
       mu_.unlock();
       init_done_.WaitForNotification();
-      mu_.lock();
+      mu_.lock(__PRETTY_FUNCTION__);
     }
     Status result = init_result_;
     mu_.unlock();
@@ -459,21 +459,21 @@ class RunManyGraphs {
   void WhenDone(int index, const Status& s) {
     TRACEPRINTF("Partition %d %s", index, s.ToString().c_str());
     if (!s.ok()) {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       UpdateStatusLocked(s);
     }
     pending_.DecrementCount();
   }
 
   void StartCancel() {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     UpdateStatusLocked(errors::Cancelled("RunManyGraphs"));
   }
 
   void Wait() { pending_.Wait(); }
 
   Status status() const {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return status_;
   }
 
@@ -676,7 +676,7 @@ class CleanupBroadcastHelper {
     bool run_callback = false;
     Status status_copy;
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       status_.Update(s);
       if (--num_pending_ == 0) {
         run_callback = true;
@@ -1030,7 +1030,7 @@ Status MasterSession::Extend(const ExtendSessionRequest* req,
   UpdateLastAccessTime();
   std::unique_ptr<SimpleGraphExecutionState> extended_execution_state;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (closed_) {
       return errors::FailedPrecondition("Session is closed.");
     }
@@ -1068,7 +1068,7 @@ Status MasterSession::StartStep(const BuildGraphOptions& opts, int64* count,
   const uint64 hash = HashBuildGraphOptions(opts);
   ReffedClientGraph* to_unref = nullptr;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     // Keep track of how many times this subgraph has been executed in
     // this session.
     int64* c = &subgraph_execution_counts_[hash];
@@ -1144,7 +1144,7 @@ Status MasterSession::PartialRunSetup(const PartialRunSetupRequest* req,
   rcg->Ref();
   RunState* run_state = new RunState(inputs, outputs, rcg, step_id, count);
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     partial_runs_.emplace(
         std::make_pair(handle, std::unique_ptr<RunState>(run_state)));
   }
@@ -1159,7 +1159,7 @@ Status MasterSession::Run(CallOptions* opts, const RunStepRequestWrapper& req,
                           MutableRunStepResponseWrapper* resp) {
   UpdateLastAccessTime();
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (closed_) {
       return errors::FailedPrecondition("Session is closed.");
     }
@@ -1172,7 +1172,7 @@ Status MasterSession::Run(CallOptions* opts, const RunStepRequestWrapper& req,
     status = DoRunWithLocalExecution(opts, req, resp);
   }
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     --num_running_;
     if (num_running_ == 0) {
       num_running_is_zero_.notify_all();
@@ -1186,7 +1186,7 @@ Status MasterSession::BuildAndRegisterPartitions(ReffedClientGraph* rcg) {
   PartitionOptions popts;
   popts.node_to_loc = SplitByWorker;
   popts.new_name = [this](const string& prefix) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return strings::StrCat(prefix, "_S", next_node_id_++);
   };
   popts.get_incarnation = [this](const string& name) -> int64 {
@@ -1228,7 +1228,7 @@ Status MasterSession::DoPartialRun(CallOptions* opts,
   const string& prun_handle = req.partial_run_handle();
   RunState* run_state = nullptr;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     auto it = partial_runs_.find(prun_handle);
     if (it == partial_runs_.end()) {
       return errors::InvalidArgument(
@@ -1321,7 +1321,7 @@ Status MasterSession::DoPartialRun(CallOptions* opts,
           }
           rcg->Unref();
         });
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     partial_runs_.erase(prun_handle);
   }
   return s;
@@ -1381,7 +1381,7 @@ Status MasterSession::DoRunWithLocalExecution(
     rcg->ProcessStats(step_id, &pss, execution_state_.get(), ph.get(),
                       req.options(), resp->mutable_metadata());
   } else if (errors::IsCancelled(s)) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (closed_) {
       if (garbage_collected_) {
         s = errors::Cancelled(
@@ -1405,13 +1405,13 @@ Status MasterSession::DoRunWithLocalExecution(
 
 Status MasterSession::Close() {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     closed_ = true;  // All subsequent calls to Run() or Extend() will fail.
   }
   cancellation_manager_.StartCancel();
   std::vector<ReffedClientGraph*> to_unref;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     while (num_running_ != 0) {
       num_running_is_zero_.wait(l);
     }
@@ -1424,7 +1424,7 @@ Status MasterSession::Close() {
 
 void MasterSession::GarbageCollect() {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     closed_ = true;
     garbage_collected_ = true;
   }

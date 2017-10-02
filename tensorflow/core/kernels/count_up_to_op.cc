@@ -30,7 +30,7 @@ class CountUpToOp : public OpKernel {
   void Compute(OpKernelContext* context) override {
     T before_increment;
     {
-      mutex_lock l(*context->input_ref_mutex(0));
+      mutex_lock l(*context->input_ref_mutex(0), __PRETTY_FUNCTION__);
       Tensor tensor = context->mutable_input(0, true);
       OP_REQUIRES(context, TensorShapeUtils::IsScalar(tensor.shape()),
                   errors::InvalidArgument("input is not a scalar: ",

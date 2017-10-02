@@ -444,13 +444,13 @@ bool DebugGrpcChannel::is_channel_ready() {
 }
 
 bool DebugGrpcChannel::WriteEvent(const Event& event) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
 
   return reader_writer_->Write(event);
 }
 
 Status DebugGrpcChannel::Close() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
 
   reader_writer_->WritesDone();
   if (reader_writer_->Finish().ok()) {
@@ -491,7 +491,7 @@ Status DebugGrpcIO::SendEventProtoThroughGrpcStream(
 
   std::shared_ptr<DebugGrpcChannel> debug_grpc_channel;
   {
-    mutex_lock l(streams_mu);
+    mutex_lock l(streams_mu, __PRETTY_FUNCTION__);
     if (stream_channels.find(grpc_stream_url) == stream_channels.end()) {
       debug_grpc_channel.reset(new DebugGrpcChannel(server_stream_addr));
 
@@ -517,7 +517,7 @@ Status DebugGrpcIO::SendEventProtoThroughGrpcStream(
 }
 
 Status DebugGrpcIO::CloseGrpcStream(const string& grpc_stream_url) {
-  mutex_lock l(streams_mu);
+  mutex_lock l(streams_mu, __PRETTY_FUNCTION__);
 
   if (stream_channels.find(grpc_stream_url) != stream_channels.end()) {
     // Stream of the specified address exists. Close it and remove it from

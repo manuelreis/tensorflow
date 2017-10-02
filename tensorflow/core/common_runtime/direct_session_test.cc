@@ -839,13 +839,13 @@ TEST(DirectSessionTest, TestTimeoutCleanShutdown) {
 class BlockingOpState {
  public:
   void AwaitState(int awaiting_state) {
-    mutex_lock ml(mu_);
+    mutex_lock ml(mu_, __PRETTY_FUNCTION__);
     while (state_ != awaiting_state) {
       cv_.wait(ml);
     }
   }
   void MoveToState(int expected_current, int next) {
-    mutex_lock ml(mu_);
+    mutex_lock ml(mu_, __PRETTY_FUNCTION__);
     CHECK_EQ(expected_current, state_);
     state_ = next;
     cv_.notify_all();

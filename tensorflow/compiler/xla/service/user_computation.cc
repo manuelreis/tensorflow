@@ -144,7 +144,7 @@ UserComputation::MakeWithRemapping(
   auto user_computation =
       MakeUnique<UserComputation>(session_computation.name(), handle);
   {
-    tensorflow::mutex_lock lock(user_computation->mutex_);
+    tensorflow::mutex_lock lock(user_computation->mutex_, __PRETTY_FUNCTION__);
     user_computation->session_computation_ = session_computation;
     user_computation->next_handle_value_ =
         std::max_element(session_computation.requests().begin(),
@@ -182,7 +182,7 @@ ComputationDataHandle UserComputation::CreateComputationDataHandle() {
 
 StatusOr<ComputationDataHandle> UserComputation::AddParameterInstruction(
     const ParameterRequest& parameter_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   int64 parameter_number = parameter_request.parameter();
   if (parameters_.count(parameter_number) != 0) {
@@ -210,7 +210,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddParameterInstruction(
 }
 
 Status UserComputation::AddSendInstruction(const SendRequest& send_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   // Check if the operand of the instruction is valid.
   TF_RETURN_IF_ERROR(LookUpRequest(send_request.operand()).status());
@@ -232,7 +232,7 @@ Status UserComputation::AddSendInstruction(const SendRequest& send_request) {
 
 StatusOr<ComputationDataHandle> UserComputation::AddRecvInstruction(
     const RecvRequest& recv_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   const Shape& shape = recv_request.shape();
   TF_RETURN_IF_ERROR(ShapeUtil::ValidateShapeWithOptionalLayout(shape));
@@ -251,7 +251,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddRecvInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddPadInstruction(
     const PadRequest& pad_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
                       LookUpRequest(pad_request.operand()));
@@ -283,7 +283,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddConstantInstruction(
   TF_RETURN_IF_ERROR(
       ShapeUtil::ValidateShapeWithOptionalLayout(validated_shape));
 
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   ComputationDataHandle handle = CreateComputationDataHandle();
 
@@ -300,7 +300,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddConstantInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddGetTupleElementInstruction(
     const GetTupleElementRequest& get_tuple_element_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
                       LookUpRequest(get_tuple_element_request.operand()));
@@ -323,7 +323,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddGetTupleElementInstruction(
 }
 
 Status UserComputation::AddTraceInstruction(const TraceRequest& trace_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   // Verify that the operand index is valid.
   TF_RETURN_IF_ERROR(LookUpRequest(trace_request.operand()).status());
@@ -343,7 +343,7 @@ Status UserComputation::AddTraceInstruction(const TraceRequest& trace_request) {
 
 StatusOr<ComputationDataHandle> UserComputation::AddRngInstruction(
     const RngRequest& rng_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   // Check the number of parameters per RNG distribution.
   switch (rng_request.distribution()) {
@@ -393,7 +393,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddRngInstruction(
 StatusOr<ComputationDataHandle> UserComputation::AddMapInstruction(
     const MapRequest& map_request,
     const UserComputation& to_apply_computation) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   std::vector<const Shape*> operand_shapes;
   for (const ComputationDataHandle& handle : map_request.operands()) {
@@ -428,7 +428,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddMapInstruction(
 StatusOr<ComputationDataHandle> UserComputation::AddReduceInstruction(
     const ReduceRequest& reduce_request,
     const UserComputation& to_apply_computation) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
                       LookUpRequest(reduce_request.operand()));
@@ -465,7 +465,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddReduceInstruction(
 StatusOr<ComputationDataHandle> UserComputation::AddReduceWindowInstruction(
     const ReduceWindowRequest& reduce_window_request,
     const UserComputation& to_apply_computation) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
                       LookUpRequest(reduce_window_request.operand()));
@@ -504,7 +504,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddSelectAndScatterInstruction(
     const SelectAndScatterRequest& select_and_scatter_request,
     const UserComputation& select_computation,
     const UserComputation& scatter_computation) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
                       LookUpRequest(select_and_scatter_request.operand()));
@@ -548,7 +548,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddSelectAndScatterInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddReverseInstruction(
     const ReverseRequest& reverse_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
                       LookUpRequest(reverse_request.operand()));
@@ -573,7 +573,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddWhileInstruction(
     const WhileRequest& while_request,
     const UserComputation& condition_computation,
     const UserComputation& body_computation) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* init,
                       LookUpRequest(while_request.init()));
@@ -611,7 +611,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddWhileInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddBroadcastInstruction(
     const BroadcastRequest& broadcast_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   // Fetches and validates the operand.
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
@@ -636,7 +636,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddBroadcastInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddReshapeInstruction(
     const ReshapeRequest& reshape_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   // Fetches and validates the operand.
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
@@ -664,7 +664,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddReshapeInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddTransposeInstruction(
     const TransposeRequest& transpose_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   // Fetches and validates the operand.
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
@@ -691,7 +691,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddTransposeInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddSliceInstruction(
     const SliceRequest& slice_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
                       LookUpRequest(slice_request.operand()));
@@ -718,7 +718,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddSliceInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddDynamicSliceInstruction(
     const DynamicSliceRequest& dynamic_slice_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
                       LookUpRequest(dynamic_slice_request.operand()));
@@ -750,7 +750,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddDynamicSliceInstruction(
 StatusOr<ComputationDataHandle>
 UserComputation::AddDynamicUpdateSliceInstruction(
     const DynamicUpdateSliceRequest& dynamic_update_slice_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
                       LookUpRequest(dynamic_update_slice_request.operand()));
@@ -785,7 +785,7 @@ UserComputation::AddDynamicUpdateSliceInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddConcatenateInstruction(
     const ConcatenateRequest& concatenate_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   std::vector<const Shape*> operand_shapes;
   for (const ComputationDataHandle& handle : concatenate_request.operands()) {
@@ -814,7 +814,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddConcatenateInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddConvertInstruction(
     const ConvertRequest& convert_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
                       LookUpRequest(convert_request.operand()));
@@ -839,7 +839,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddConvertInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddConvolveInstruction(
     const ConvolveRequest& convolve_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* lhs,
                       LookUpRequest(convolve_request.lhs()));
@@ -866,7 +866,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddConvolveInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddCrossReplicaSumInstruction(
     const CrossReplicaSumRequest& cross_replica_sum_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
                       LookUpRequest(cross_replica_sum_request.operand()));
@@ -890,7 +890,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddCrossReplicaSumInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddInfeedInstruction(
     const InfeedRequest& infeed_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   const Shape& shape = infeed_request.shape();
   if (ShapeUtil::IsNestedTuple(shape)) {
@@ -916,7 +916,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddInfeedInstruction(
 
 Status UserComputation::AddOutfeedInstruction(
     const OutfeedRequest& outfeed_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   const Shape& shape = outfeed_request.shape();
   if (ShapeUtil::IsNestedTuple(shape)) {
@@ -947,7 +947,7 @@ Status UserComputation::AddOutfeedInstruction(
 StatusOr<ComputationDataHandle> UserComputation::AddCallInstruction(
     const CallRequest& call_request,
     const UserComputation& to_apply_computation) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   std::vector<const Shape*> operand_shapes;
   for (const ComputationDataHandle& handle : call_request.operands()) {
@@ -981,7 +981,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddCallInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddCustomCallInstruction(
     const CustomCallRequest& custom_call_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   for (const ComputationDataHandle& handle : custom_call_request.operands()) {
     TF_RETURN_IF_ERROR(LookUpRequest(handle).status());
@@ -1004,7 +1004,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddCustomCallInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddUnaryInstruction(
     const UnaryOpRequest& unary_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand,
                       LookUpRequest(unary_request.operand()));
@@ -1028,7 +1028,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddUnaryInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddBinaryInstruction(
     const BinaryOpRequest& binary_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* lhs,
                       LookUpRequest(binary_request.lhs()));
@@ -1056,7 +1056,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddBinaryInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddTernaryInstruction(
     const TernaryOpRequest& ternary_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* lhs,
                       LookUpRequest(ternary_request.lhs()));
@@ -1085,7 +1085,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddTernaryInstruction(
 
 StatusOr<ComputationDataHandle> UserComputation::AddVariadicInstruction(
     const VariadicOpRequest& variadic_request) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   std::vector<const Shape*> operand_shapes;
   for (const ComputationDataHandle& handle : variadic_request.operands()) {
@@ -1112,7 +1112,7 @@ StatusOr<ComputationDataHandle> UserComputation::AddVariadicInstruction(
 }
 
 StatusOr<Shape> UserComputation::GetShape(const ComputationDataHandle& handle) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_ASSIGN_OR_RETURN(const OperationRequest* operand, LookUpRequest(handle));
   return operand->output_shape();
@@ -1120,7 +1120,7 @@ StatusOr<Shape> UserComputation::GetShape(const ComputationDataHandle& handle) {
 
 Status UserComputation::SetOpMetadata(const ComputationDataHandle& handle,
                                       const OpMetadata& metadata) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   int64 handle_value = handle.handle();
   if (session_computation_.requests().count(handle_value) == 0) {
@@ -1135,7 +1135,7 @@ Status UserComputation::SetOpMetadata(const ComputationDataHandle& handle,
 }
 
 Status UserComputation::SetReturnValue(const ComputationDataHandle& handle) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   if (!(handle.handle() > 0 && handle.handle() < next_handle_value_)) {
     return InvalidArgument("Invalid handle in SetReturnValue");
@@ -1150,7 +1150,7 @@ Status UserComputation::SetReturnValue(const ComputationDataHandle& handle) {
 }
 
 VersionedComputationHandle UserComputation::GetVersionedHandle() const {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
   return GetVersionedHandleInternal();
 }
 
@@ -1173,7 +1173,7 @@ VersionedComputationHandle UserComputation::GetVersionedHandleInternal() const {
 
 VersionedComputationHandle UserComputation::GetVersionedHandleAtOperation(
     const ComputationDataHandle& operation) const {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   // The version at which an operation was added is simply the handle value of
   // the ComputationDataHandle.
@@ -1240,7 +1240,7 @@ StatusOr<const OperationRequest*> GetRoot(
 StatusOr<std::shared_ptr<const ProgramShape>>
 UserComputation::ComputeProgramShape(
     VersionedComputationHandle::Version version) const {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   TF_RET_CHECK(version > 0 && version < next_handle_value_);
 
@@ -1574,7 +1574,7 @@ void ConstantVisitor(const SessionComputation& session_computation,
 
 StatusOr<bool> UserComputation::IsConstant(
     const ComputationDataHandle& handle) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   // Verify that the handle is valid.
   auto operation_status = LookUpRequest(handle);
@@ -1592,7 +1592,7 @@ StatusOr<bool> UserComputation::IsConstant(
 std::vector<VersionedComputationHandle>
 UserComputation::GetEmbeddedComputations(
     VersionedComputationHandle::Version version) const {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   VLOG(1)
       << "GetEmbeddedComputations(" << name() << " "
@@ -1773,7 +1773,7 @@ Status UserComputation::RemapEmbeddedComputations(
 
 SessionComputation UserComputation::CloneSessionComputation(
     VersionedComputationHandle::Version version) const {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
   SessionComputation result = session_computation_;
   // Erase all the requests that exceed the version specified.
   // There's no lower_bound method on tensorflow::protobuf::Map so we iterate
@@ -2393,7 +2393,7 @@ StatusOr<std::unique_ptr<HloComputation>> UserComputation::BuildHloComputation(
     VersionedComputationHandle::Version version,
     HloComputationResolver hlo_resolver,
     bool include_unreachable_instructions) const {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   VLOG(2) << "Building HloComputation from UserComputation " << name_
           << " at version " << version;

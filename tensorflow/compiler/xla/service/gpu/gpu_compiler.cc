@@ -289,7 +289,7 @@ StatusOr<std::unique_ptr<Executable>> GpuCompiler::Compile(
   // Reserve space for the PTX to be generated for this module.
   string* ptx;
   {
-    tensorflow::mutex_lock lock(mutex_);
+    tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
     generated_ptxes_.emplace_back(MakeUnique<string>());
     ptx = generated_ptxes_.back().get();
   }

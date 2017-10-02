@@ -230,48 +230,48 @@ void Histogram::EncodeToProto(HistogramProto* proto,
 
 // ThreadSafeHistogram implementation.
 bool ThreadSafeHistogram::DecodeFromProto(const HistogramProto& proto) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return histogram_.DecodeFromProto(proto);
 }
 
 void ThreadSafeHistogram::Clear() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   histogram_.Clear();
 }
 
 void ThreadSafeHistogram::Add(double value) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   histogram_.Add(value);
 }
 
 void ThreadSafeHistogram::EncodeToProto(HistogramProto* proto,
                                         bool preserve_zero_buckets) const {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   histogram_.EncodeToProto(proto, preserve_zero_buckets);
 }
 
 double ThreadSafeHistogram::Median() const {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return histogram_.Median();
 }
 
 double ThreadSafeHistogram::Percentile(double p) const {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return histogram_.Percentile(p);
 }
 
 double ThreadSafeHistogram::Average() const {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return histogram_.Average();
 }
 
 double ThreadSafeHistogram::StandardDeviation() const {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return histogram_.StandardDeviation();
 }
 
 std::string ThreadSafeHistogram::ToString() const {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return histogram_.ToString();
 }
 

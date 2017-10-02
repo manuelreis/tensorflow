@@ -34,7 +34,7 @@ RecordYielder::RecordYielder(OpKernelConstruction* context,
 
 RecordYielder::~RecordYielder() {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     stop_ = true;
     buf_empty_.notify_all();
     buf_enough_.notify_all();
@@ -45,7 +45,7 @@ RecordYielder::~RecordYielder() {
 }
 
 Status RecordYielder::YieldOne(string* value) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   while (!BufEnough()) {
     buf_enough_.wait(l);
   }
@@ -76,7 +76,7 @@ struct RecordYielder::Shard {
 };
 
 bool RecordYielder::ShouldFinish(const Status& s) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   status_.Update(s);
   return stop_ || !status_.ok();
 }
@@ -143,7 +143,7 @@ void RecordYielder::MainLoop() {
 
     // Starts the next epoch once all buffered records are consumed.
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       epoch_end_ = true;
       while (!BufEmpty()) {
         buf_empty_.wait(l);
@@ -155,7 +155,7 @@ void RecordYielder::MainLoop() {
 }
 
 bool RecordYielder::Add(std::vector<string>* values) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   while (!BufNotFull()) {
     buf_not_full_.wait(l);
   }

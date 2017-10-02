@@ -887,7 +887,7 @@ class LibxsmmSparseMatMul {
     std::unique_ptr<TensorInfoCacheEntry> take_cache_entry(int M, int K, int N,
                                                            int max_threads)
         LOCKS_EXCLUDED(lock) {
-      tensorflow::mutex_lock ml(lock);
+      tensorflow::mutex_lock ml(lock, __PRETTY_FUNCTION__);
       auto key = std::make_tuple(M, K, N, max_threads);
       auto it = entries.find(key);
       if (it != entries.end()) {
@@ -906,12 +906,12 @@ class LibxsmmSparseMatMul {
     // Add a cache entry with certain parameters
     void return_cache_entry(std::unique_ptr<TensorInfoCacheEntry> e)
         LOCKS_EXCLUDED(lock) {
-      tensorflow::mutex_lock ml(lock);
+      tensorflow::mutex_lock ml(lock, __PRETTY_FUNCTION__);
       auto key = std::make_tuple(e->M, e->K, e->N, e->max_threads);
       entries.insert(std::make_pair(key, std::move(e)));
     }
     ~TensorInfoCache() {
-      tensorflow::mutex_lock ml(lock);
+      tensorflow::mutex_lock ml(lock, __PRETTY_FUNCTION__);
       for (auto& p : entries) {
         libxsmm_spmdm_destroy(&p.second->handle);
       }

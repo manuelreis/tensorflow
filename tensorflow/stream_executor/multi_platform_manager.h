@@ -123,7 +123,7 @@ class MultiPlatformManager {
   // Provides access to the available set of platforms under a lock.
   static port::Status WithPlatforms(
       std::function<port::Status(PlatformMap*)> callback) {
-    mutex_lock lock(GetPlatformsMutex());
+    mutex_lock lock(GetPlatformsMutex(), __PRETTY_FUNCTION__);
     return callback(GetPlatformMap());
   }
 

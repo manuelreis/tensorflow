@@ -42,7 +42,7 @@ class ReaderOpKernel : public ResourceOpKernel<ReaderInterface> {
   // will take ownership of.
   void SetReaderFactory(std::function<ReaderInterface*()> factory)
       LOCKS_EXCLUDED(mu_) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     DCHECK(resource_ == nullptr);
     factory_ = factory;
   }

@@ -143,7 +143,7 @@ TEST(SharedBatchSchedulerTest, ObeyBatchSizeConstraint) {
       batch_data.push_back(batch->mutable_task(i)->size());
     }
     {
-      mutex_lock l(mu);
+      mutex_lock l(mu, __PRETTY_FUNCTION__);
       callback_data.push_back(batch_data);
     }
   };

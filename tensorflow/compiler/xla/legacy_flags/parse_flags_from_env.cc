@@ -167,7 +167,7 @@ static tensorflow::mutex env_argv_mu(tensorflow::LINKER_INITIALIZED);
 // Call Flags::Parse(argc, argv, flag_list) against any as yet unrecognized
 // flags passed in from the environment.
 bool ParseFlagsFromEnv(const std::vector<tensorflow::Flag>& flag_list) {
-  env_argv_mu.lock();
+  env_argv_mu.lock(__PRETTY_FUNCTION__);
   if (env_argv == nullptr) {
     env_argv = new EnvArgv;
   }
@@ -184,7 +184,7 @@ bool ParseFlagsFromEnv(const std::vector<tensorflow::Flag>& flag_list) {
 // *pargc, and *pargv to point to the internal locations of the argc and argv
 // constructed from the environment.
 void ResetFlagsFromEnvForTesting(int** pargc, std::vector<char*>** pargv) {
-  env_argv_mu.lock();
+  env_argv_mu.lock(__PRETTY_FUNCTION__);
   if (env_argv == nullptr) {
     env_argv = new EnvArgv;
   }

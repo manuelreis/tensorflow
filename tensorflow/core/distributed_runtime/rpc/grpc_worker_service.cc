@@ -63,7 +63,7 @@ class GrpcWorkerService : public AsyncServiceInterface {
   void Shutdown() override {
     bool did_shutdown = false;
     {
-      mutex_lock l(shutdown_mu_);
+      mutex_lock l(shutdown_mu_, __PRETTY_FUNCTION__);
       if (!is_shutdown_) {
         LOG(INFO) << "Shutting down GrpcWorkerService.";
         is_shutdown_ = true;
@@ -92,7 +92,7 @@ class GrpcWorkerService : public AsyncServiceInterface {
 // to keep accepting new requests.
 #define ENQUEUE_REQUEST(method, supports_cancel)                       \
   do {                                                                 \
-    mutex_lock l(shutdown_mu_);                                        \
+    mutex_lock l(shutdown_mu_, __PRETTY_FUNCTION__);                   \
     if (!is_shutdown_) {                                               \
       Call<GrpcWorkerService, grpc::WorkerService::AsyncService,       \
            method##Request, method##Response>::                        \
@@ -271,7 +271,7 @@ class GrpcWorkerService : public AsyncServiceInterface {
 #undef ENQUEUE_REQUEST
 
   void EnqueueRecvTensorRequestRaw() {
-    mutex_lock l(shutdown_mu_);
+    mutex_lock l(shutdown_mu_, __PRETTY_FUNCTION__);
     if (!is_shutdown_) {
       Call<GrpcWorkerService, grpc::WorkerService::AsyncService,
            RecvTensorRequest, ::grpc::ByteBuffer>::

@@ -183,7 +183,7 @@ template <typename Parameters, typename Config>
 class AutoTuneMap {
  public:
   bool Find(const Parameters& params, Config* config) const {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     auto iter = params_config_map_.find(params);
     if (iter == params_config_map_.end() ||
         iter->second.score < min_score_threshold_) {
@@ -193,7 +193,7 @@ class AutoTuneMap {
     return true;
   }
   void Insert(const ConvParameters& params, const Config& config) {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     auto iter = params_config_map_.find(params);
     int new_score = 0;
     if (iter == params_config_map_.end()) {

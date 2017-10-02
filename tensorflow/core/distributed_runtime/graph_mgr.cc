@@ -123,7 +123,7 @@ Status GraphMgr::InitItem(const string& session, const GraphDef& gdef,
   PartitionOptions popts;
   popts.node_to_loc = SplitByDevice;
   popts.new_name = [this](const string& prefix) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return strings::StrCat(prefix, "_G", next_id_++);
   };
   popts.get_incarnation = [this](const string& name) -> int64 {
@@ -249,7 +249,7 @@ Status GraphMgr::Register(const string& session, const GraphDef& gdef,
 
   // Inserts one item into table_.
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     *handle = strings::Printf("%016llx", ++next_id_);
     item->handle = *handle;
     CHECK(table_.insert({*handle, item}).second);
@@ -261,7 +261,7 @@ Status GraphMgr::Deregister(const string& handle) {
   Item* item = nullptr;
   // Removes one item from table_.
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     auto iter = table_.find(handle);
     if (iter == table_.end()) {
       return errors::Aborted("Graph handle is not found: ", handle,
@@ -278,7 +278,7 @@ Status GraphMgr::DeregisterAll() {
   std::vector<Item*> items;
   // Removes all items from table_.
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     for (const auto& entry : table_) {
       items.push_back(entry.second);
     }
@@ -374,7 +374,7 @@ void GraphMgr::RecvOutputsFromRendezvousAsync(Rendezvous* rendezvous,
                                                " was not valid.");
             }
           }
-          call_state->mu.lock();
+          call_state->mu.lock(__PRETTY_FUNCTION__);
           call_state->shared_status.Update(status);
           call_state->done_counter--;
           // If we are the last async call to return, call the done callback.
@@ -423,7 +423,7 @@ void GraphMgr::ExecuteAsync(const string& handle, const int64 step_id,
   // Lookup an item. Holds one ref while executing.
   Item* item = nullptr;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     auto iter = table_.find(handle);
     if (iter != table_.end()) {
       item = iter->second;
@@ -479,7 +479,7 @@ void GraphMgr::StartParallelExecutors(const string& handle, int64 step_id,
                           });
   Executor::Args args;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     args.step_id = ++next_id_;
   }
   args.rendezvous = rendezvous;

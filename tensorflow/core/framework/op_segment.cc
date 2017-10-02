@@ -38,7 +38,7 @@ Status OpSegment::FindOrCreate(const string& session_handle,
                                const string& node_name, OpKernel** kernel,
                                CreateKernelFn create_fn) {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     auto item = gtl::FindPtrOrNull(sessions_, session_handle);
     if (item == nullptr) {
       return errors::NotFound("Session ", session_handle, " is not found.");
@@ -54,7 +54,7 @@ Status OpSegment::FindOrCreate(const string& session_handle,
     return s;
   }
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     auto item = gtl::FindPtrOrNull(sessions_, session_handle);
     if (item == nullptr) {
       return errors::NotFound("Session ", session_handle, " is not found.");
@@ -71,7 +71,7 @@ Status OpSegment::FindOrCreate(const string& session_handle,
 }
 
 void OpSegment::AddHold(const string& session_handle) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   Item** item = &sessions_[session_handle];
   if (*item == nullptr) {
     *item = new Item;  // num_holds == 1
@@ -83,7 +83,7 @@ void OpSegment::AddHold(const string& session_handle) {
 void OpSegment::RemoveHold(const string& session_handle) {
   Item* item = nullptr;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     auto siter = sessions_.find(session_handle);
     if (siter == sessions_.end()) {
       VLOG(1) << "Session " << session_handle << " is not found.";

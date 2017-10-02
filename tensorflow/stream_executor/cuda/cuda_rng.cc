@@ -115,7 +115,7 @@ CUDARng::~CUDARng() {
 }
 
 bool CUDARng::Init() {
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
   CHECK(rng_ == nullptr);
 
   curandStatus_t ret =
@@ -151,7 +151,7 @@ constexpr bool ComplexIsConsecutiveFloats() {
 template <typename T>
 bool CUDARng::DoPopulateRandUniformInternal(Stream *stream,
                                             DeviceMemory<T> *v) {
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
   static_assert(ComplexIsConsecutiveFloats(),
                 "std::complex values are not stored as consecutive values");
 
@@ -210,7 +210,7 @@ bool CUDARng::DoPopulateRandGaussianInternal(Stream *stream, ElemT mean,
                                              ElemT stddev,
                                              DeviceMemory<ElemT> *v,
                                              FuncT func) {
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
 
   if (!SetStream(stream)) {
     return false;
@@ -242,7 +242,7 @@ bool CUDARng::DoPopulateRandGaussian(Stream *stream, double mean, double stddev,
 }
 
 bool CUDARng::SetSeed(Stream *stream, const uint8 *seed, uint64 seed_bytes) {
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
   CHECK(rng_ != nullptr);
 
   if (!CheckSeed(seed, seed_bytes)) {

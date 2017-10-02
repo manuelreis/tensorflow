@@ -395,7 +395,7 @@ std::map<int, GraphRendererInterface*>* GraphRenderers() {
 }
 
 GraphRendererInterface* GetGraphRenderer() {
-  tensorflow::mutex_lock lock(RendererMutex());
+  tensorflow::mutex_lock lock(RendererMutex(), __PRETTY_FUNCTION__);
   auto* graph_renderers = GraphRenderers();
   auto it = graph_renderers->rbegin();
   CHECK(it != graph_renderers->rend()) << "No registered graph dumpers";
@@ -405,7 +405,7 @@ GraphRendererInterface* GetGraphRenderer() {
 }  // namespace
 
 Registrar::Registrar(GraphRendererInterface* dumper, int priority) {
-  tensorflow::mutex_lock lock(RendererMutex());
+  tensorflow::mutex_lock lock(RendererMutex(), __PRETTY_FUNCTION__);
   auto* graph_renderers = GraphRenderers();
   graph_renderers->emplace(priority, dumper);
 }

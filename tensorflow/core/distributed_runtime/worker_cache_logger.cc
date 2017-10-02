@@ -30,7 +30,7 @@ const int32 kWorkerCacheLoggerLimit = 1 << 10;
 }  // namespace
 
 void WorkerCacheLogger::SetLogging(bool v) {
-  mutex_lock l(count_mu_);
+  mutex_lock l(count_mu_, __PRETTY_FUNCTION__);
   if (v) {
     ++want_logging_count_;
   } else {
@@ -43,7 +43,7 @@ void WorkerCacheLogger::SetLogging(bool v) {
 }
 
 void WorkerCacheLogger::ClearLogs() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   ClearLogsWithLock();
 }
 
@@ -55,7 +55,7 @@ void WorkerCacheLogger::ClearLogsWithLock() {
 }
 
 bool WorkerCacheLogger::RetrieveLogs(int64 step_id, StepStats* ss) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   LogMap::iterator iter = log_map_.find(step_id);
   if (iter != log_map_.end()) {
     iter->second.collector->Swap(ss);
@@ -68,7 +68,7 @@ bool WorkerCacheLogger::RetrieveLogs(int64 step_id, StepStats* ss) {
 
 void WorkerCacheLogger::Save(const string& device, int64 step_id,
                              NodeExecStats* ns) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   StepLog* sl = &log_map_[step_id];
   if (!sl->collector) {
     sl->collector = new StepStatsCollector(&sl->step_stats);

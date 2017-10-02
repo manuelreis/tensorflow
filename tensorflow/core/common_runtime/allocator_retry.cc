@@ -44,7 +44,7 @@ void* AllocatorRetry::AllocateRaw(
         first = false;
       }
       if (now < deadline_micros) {
-        mutex_lock l(mu_);
+        mutex_lock l(mu_, __PRETTY_FUNCTION__);
         WaitForMilliseconds(&l, &memory_returned_,
                             (deadline_micros - now) / 1000);
       } else {

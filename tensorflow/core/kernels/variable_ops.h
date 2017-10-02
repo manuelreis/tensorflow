@@ -55,7 +55,7 @@ class VariableOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* ctx) override {
-    mutex_lock l(init_mu_);
+    mutex_lock l(init_mu_, __PRETTY_FUNCTION__);
     if (!initialized_) {
       OP_REQUIRES_OK(
           ctx,

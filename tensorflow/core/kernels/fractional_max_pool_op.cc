@@ -91,7 +91,7 @@ class FractionalMaxPoolOp : public OpKernel {
             input_size_[1], output_size_[1], &generator_, pseudo_random_);
         width_cum_seq = GeneratePoolingSequence(input_size_[2], output_size_[2],
                                                 &generator_, pseudo_random_);
-        mutex_lock lock(mu_);
+        mutex_lock lock(mu_, __PRETTY_FUNCTION__);
         height_cum_seq_ = height_cum_seq;
         width_cum_seq_ = width_cum_seq;
         pooling_region_generated_ = true;

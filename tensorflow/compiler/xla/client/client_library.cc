@@ -63,7 +63,7 @@ ClientLibrary::~ClientLibrary() = default;
   perftools::gputools::Platform* platform = options.platform();
   int replica_count = options.number_of_replicas();
   ClientLibrary& client_library = Singleton();
-  tensorflow::mutex_lock lock(client_library.service_mutex_);
+  tensorflow::mutex_lock lock(client_library.service_mutex_, __PRETTY_FUNCTION__);
 
   if (platform == nullptr) {
     TF_ASSIGN_OR_RETURN(platform, PlatformUtil::GetDefaultPlatform());
@@ -98,7 +98,7 @@ ClientLibrary::~ClientLibrary() = default;
 /* static */ LocalService* ClientLibrary::GetXlaService(
     perftools::gputools::Platform* platform) {
   ClientLibrary& client_library = Singleton();
-  tensorflow::mutex_lock lock(client_library.service_mutex_);
+  tensorflow::mutex_lock lock(client_library.service_mutex_, __PRETTY_FUNCTION__);
   auto it = client_library.instances_.find(platform->id());
   CHECK(it != client_library.instances_.end());
   return it->second->service.get();

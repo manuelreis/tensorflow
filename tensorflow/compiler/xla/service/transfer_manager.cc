@@ -47,7 +47,7 @@ TransferManager::GetPlatformTransferManagers() {
     se::Platform::Id platform_id,
     TransferManagerCreationFunction creation_function) {
   tensorflow::mutex_lock lock(
-      *TransferManager::platform_transfer_manager_mutex());
+      *TransferManager::platform_transfer_manager_mutex(), __PRETTY_FUNCTION__);
   auto* managers = GetPlatformTransferManagers();
   CHECK(managers->find(platform_id) == managers->end());
   (*managers)[platform_id].creation_function = creation_function;
@@ -56,7 +56,7 @@ TransferManager::GetPlatformTransferManagers() {
 /* static */ StatusOr<TransferManager*> TransferManager::GetForPlatform(
     const se::Platform* platform) {
   tensorflow::mutex_lock lock(
-      *TransferManager::platform_transfer_manager_mutex());
+      *TransferManager::platform_transfer_manager_mutex(), __PRETTY_FUNCTION__);
   auto* managers = GetPlatformTransferManagers();
 
   auto it = managers->find(platform->id());

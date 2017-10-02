@@ -30,17 +30,17 @@ namespace tensorflow {
 ReaderBase::ReaderBase(const string& name) : name_(name) {}
 
 int64 ReaderBase::NumRecordsProduced() {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   return num_records_produced_;
 }
 
 int64 ReaderBase::NumWorkUnitsCompleted() {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   return work_finished_;
 }
 
 Status ReaderBase::Reset() {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   return ResetLocked();
 }
 
@@ -53,7 +53,7 @@ Status ReaderBase::ResetLocked() {
 }
 
 Status ReaderBase::SerializeState(string* state) {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   return SerializeStateLocked(state);
 }
 
@@ -62,7 +62,7 @@ Status ReaderBase::SerializeStateLocked(string* state) {
 }
 
 Status ReaderBase::RestoreState(const string& state) {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   Status status = RestoreStateLocked(state);
   if (!status.ok()) {
     ResetLocked().IgnoreError();
@@ -78,7 +78,7 @@ int64 ReaderBase::ReadUpTo(const int64 num_records, QueueInterface* queue,
                            std::vector<string>* keys,
                            std::vector<string>* values,
                            OpKernelContext* context) {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   int64 records_produced_this_call = 0;
   while (true) {
     // Records produced by this iteration of the ReadUpToLocked call.
@@ -151,7 +151,7 @@ Status ReaderBase::ReadUpToLocked(int64 num_records, std::vector<string>* keys,
 
 void ReaderBase::Read(QueueInterface* queue, string* key, string* value,
                       OpKernelContext* context) {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   while (true) {
     if (!work_in_progress()) {
       work_ = GetNextWorkLocked(queue, context);

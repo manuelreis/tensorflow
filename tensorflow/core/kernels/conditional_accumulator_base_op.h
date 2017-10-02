@@ -54,7 +54,7 @@ class ConditionalAccumulatorBaseOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* ctx) override {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (!accumulator_handle_set_) {
       OP_REQUIRES_OK(ctx, SetAccumulatorHandle(ctx));
     }

@@ -89,7 +89,7 @@ Allocator* ProcessState::GetGPUAllocator(const GPUOptions& options, int gpu_id,
                                          size_t total_bytes) {
 #if GOOGLE_CUDA
   const string& allocator_type = options.allocator_type();
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   gpu::Platform* gpu_platform = GPUMachineManager();
 
   // Verify that gpu_id is legitimate.
@@ -157,7 +157,7 @@ Allocator* ProcessState::GetCPUAllocator(int numa_node) {
   // TODO(tucker): actually maintain separate CPUAllocators for
   // different numa_nodes.  For now, just one.
   numa_node = 0;
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   while (cpu_allocators_.size() <= static_cast<size_t>(numa_node)) {
     Allocator* allocator =
         new PoolAllocator(100 /*pool_size_limit*/, true /*auto_resize*/,
@@ -181,7 +181,7 @@ Allocator* ProcessState::GetCUDAHostAllocator(int numa_node) {
   // TODO(tucker): actually maintain separate CPUAllocators for
   // different numa_nodes.  For now, just one.
   numa_node = 0;
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
 
   // Find the first valid StreamExecutor to request CUDA host memory
   // through, since any will work.
@@ -236,7 +236,7 @@ Allocator* ProcessState::GetCUDAHostAllocator(int numa_node) {
 
 void ProcessState::AddGPUAllocVisitor(int bus_id, AllocVisitor visitor) {
 #if GOOGLE_CUDA
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   gpu::Platform* gpu_platform = GPUMachineManager();
   for (int gpu_id = 0; gpu_id < static_cast<int64>(gpu_allocators_.size());
        ++gpu_id) {

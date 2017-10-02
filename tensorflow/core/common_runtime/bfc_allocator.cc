@@ -252,7 +252,7 @@ void* BFCAllocator::AllocateRawInternal(size_t unused_alignment,
   // The BFC allocator tries to find the best fit first.
   BinNum bin_num = BinNumForSize(rounded_bytes);
 
-  mutex_lock l(lock_);
+  mutex_lock l(lock_, __PRETTY_FUNCTION__);
   void* ptr = FindChunkPtr(bin_num, rounded_bytes, num_bytes);
   if (ptr != nullptr) {
     return ptr;
@@ -378,7 +378,7 @@ void BFCAllocator::DeallocateRawInternal(void* ptr) {
     LOG(ERROR) << "tried to deallocate nullptr";
     return;
   }
-  mutex_lock l(lock_);
+  mutex_lock l(lock_, __PRETTY_FUNCTION__);
 
   // Find the chunk from the ptr.
   BFCAllocator::ChunkHandle h = region_manager_.get_handle(ptr);
@@ -509,7 +509,7 @@ void BFCAllocator::FreeAndMaybeCoalesce(BFCAllocator::ChunkHandle h) {
 
 void BFCAllocator::AddAllocVisitor(Visitor visitor) {
   VLOG(1) << "AddVisitor";
-  mutex_lock l(lock_);
+  mutex_lock l(lock_, __PRETTY_FUNCTION__);
   region_visitors_.push_back(visitor);
   for (const auto& region : region_manager_.regions()) {
     visitor(region.ptr(), region.memory_size());
@@ -519,7 +519,7 @@ void BFCAllocator::AddAllocVisitor(Visitor visitor) {
 bool BFCAllocator::TracksAllocationSizes() { return true; }
 
 size_t BFCAllocator::RequestedSize(void* ptr) {
-  mutex_lock l(lock_);
+  mutex_lock l(lock_, __PRETTY_FUNCTION__);
   BFCAllocator::ChunkHandle h = region_manager_.get_handle(ptr);
   CHECK(h != kInvalidChunkHandle)
       << "Asked for requested size of pointer we never allocated: " << ptr;
@@ -528,7 +528,7 @@ size_t BFCAllocator::RequestedSize(void* ptr) {
 }
 
 size_t BFCAllocator::AllocatedSize(void* ptr) {
-  mutex_lock l(lock_);
+  mutex_lock l(lock_, __PRETTY_FUNCTION__);
   BFCAllocator::ChunkHandle h = region_manager_.get_handle(ptr);
   CHECK(h != kInvalidChunkHandle)
       << "Asked for allocated size of pointer we never allocated: " << ptr;
@@ -537,7 +537,7 @@ size_t BFCAllocator::AllocatedSize(void* ptr) {
 }
 
 int64 BFCAllocator::AllocationId(void* ptr) {
-  mutex_lock l(lock_);
+  mutex_lock l(lock_, __PRETTY_FUNCTION__);
   BFCAllocator::ChunkHandle h = region_manager_.get_handle(ptr);
   CHECK(h != kInvalidChunkHandle)
       << "Asked for allocation id of pointer we never allocated: " << ptr;
@@ -703,7 +703,7 @@ void BFCAllocator::DumpMemoryLog(size_t num_bytes) {
 }
 
 void BFCAllocator::GetStats(AllocatorStats* stats) {
-  mutex_lock l(lock_);
+  mutex_lock l(lock_, __PRETTY_FUNCTION__);
   *stats = stats_;
 }
 

@@ -31,19 +31,19 @@ class Notification {
   ~Notification() {}
 
   void Notify() {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     assert(!notified_);
     notified_ = true;
     cv_.notify_all();
   }
 
   bool HasBeenNotified() {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return notified_;
   }
 
   void WaitForNotification() {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     while (!notified_) {
       cv_.wait(l);
     }
@@ -53,7 +53,7 @@ class Notification {
   friend bool WaitForNotificationWithTimeout(Notification* n,
                                              int64 timeout_in_us);
   bool WaitForNotificationWithTimeout(int64 timeout_in_us) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return cv_.wait_for(l, std::chrono::microseconds(timeout_in_us),
                         [this]() { return notified_; });
   }

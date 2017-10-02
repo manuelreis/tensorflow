@@ -108,7 +108,7 @@ class Barrier : public ResourceBase {
     Tuple insert_tuple;
 
     {
-      mutex_lock lock(mu_);
+      mutex_lock lock(mu_, __PRETTY_FUNCTION__);
       if (closed_) {
         OP_REQUIRES_ASYNC(
             ctx, !cancel_pending_enqueues_ &&
@@ -182,7 +182,7 @@ class Barrier : public ResourceBase {
             return;
           }
           {
-            mutex_lock lock(mu_);
+            mutex_lock lock(mu_, __PRETTY_FUNCTION__);
             int32 ready = ready_size();
             if (closed_ && incomplete_.empty() && queue_closed_ && ready > 0) {
               CloseQueueLocked(ctx, false, callback);
@@ -198,7 +198,7 @@ class Barrier : public ResourceBase {
                    OpKernelContext* ctx, IndicesKeysValuesCallback callback) {
     int num_elements_to_deliver = num_elements;
     {
-      mutex_lock lock(mu_);
+      mutex_lock lock(mu_, __PRETTY_FUNCTION__);
       if (closed_) {
         int available_elements = ready_size();
         if (allow_small_batch) {
@@ -248,7 +248,7 @@ class Barrier : public ResourceBase {
 
   void Close(OpKernelContext* ctx, bool cancel_pending_enqueues,
              DoneCallback callback) {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     // We're allowed to close twice if the first close wasn't a
     // cancel but the second one is.
     if (closed_ && (cancel_pending_enqueues_ || !cancel_pending_enqueues)) {
@@ -271,7 +271,7 @@ class Barrier : public ResourceBase {
   int32 ready_size() { return ready_queue_->size(); }
 
   int32 incomplete_size() {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     return incomplete_.size();
   }
 
@@ -290,7 +290,7 @@ class Barrier : public ResourceBase {
   }
 
   ~Barrier() override EXCLUSIVE_LOCKS_REQUIRED(mu_) {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     incomplete_.clear();
     ready_queue_->Unref();
   }

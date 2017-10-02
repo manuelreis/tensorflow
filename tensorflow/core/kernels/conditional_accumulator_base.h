@@ -62,7 +62,7 @@ class ConditionalAccumulatorBase : public ResourceBase {
 
   // Accessor methods
   uint32 num_accumulated() {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     return counter_;
   }
 

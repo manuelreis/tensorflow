@@ -134,7 +134,7 @@ GoogleAuthProvider::GoogleAuthProvider(
       initial_retry_delay_usec_(initial_retry_delay_usec) {}
 
 Status GoogleAuthProvider::GetToken(string* t) {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   const uint64 now_sec = env_->NowSeconds();
 
   if (!current_token_.empty() &&

@@ -58,7 +58,7 @@ class SkipgramOp : public OpKernel {
     OP_REQUIRES_OK(ctx, ctx->GetAttr("subsample", &subsample_));
     OP_REQUIRES_OK(ctx, Init(ctx->env(), filename));
 
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     example_pos_ = corpus_size_;
     label_pos_ = corpus_size_;
     label_limit_ = corpus_size_;
@@ -77,7 +77,7 @@ class SkipgramOp : public OpKernel {
     Tensor labels(DT_INT32, TensorShape({batch_size_}));
     auto Tlabels = labels.flat<int32>();
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       for (int i = 0; i < batch_size_; ++i) {
         Texamples(i) = precalc_examples_[precalc_index_].input;
         Tlabels(i) = precalc_examples_[precalc_index_].label;

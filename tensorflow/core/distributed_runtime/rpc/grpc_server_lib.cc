@@ -94,7 +94,7 @@ GrpcServer::~GrpcServer() {
 }
 
 Status GrpcServer::Init() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   CHECK_EQ(state_, NEW);
   master_env_.env = env_;
   worker_env_.env = env_;
@@ -259,7 +259,7 @@ Status GrpcServer::WorkerCacheFactory(const ServerDef& server_def,
 }
 
 Status GrpcServer::Start() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   switch (state_) {
     case NEW: {
       master_thread_.reset(
@@ -283,7 +283,7 @@ Status GrpcServer::Start() {
 }
 
 Status GrpcServer::Stop() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   switch (state_) {
     case NEW:
       state_ = STOPPED;
@@ -300,7 +300,7 @@ Status GrpcServer::Stop() {
 }
 
 Status GrpcServer::Join() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   switch (state_) {
     case NEW:
       // Prevent the server from being started subsequently.

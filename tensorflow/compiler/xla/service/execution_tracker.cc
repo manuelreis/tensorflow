@@ -51,7 +51,7 @@ ExecutionTracker::ExecutionTracker() : next_handle_(1) {}
 ExecutionHandle ExecutionTracker::Register(
     Backend* backend, std::vector<Backend::StreamPtr> streams,
     const ExecutionProfile& profile, GlobalDataHandle result) {
-  tensorflow::mutex_lock lock(execution_mutex_);
+  tensorflow::mutex_lock lock(execution_mutex_, __PRETTY_FUNCTION__);
   int64 handle = next_handle_++;
   auto inserted = handle_to_execution_.emplace(
       handle,
@@ -64,7 +64,7 @@ ExecutionHandle ExecutionTracker::Register(
 }
 
 tensorflow::Status ExecutionTracker::Unregister(const ExecutionHandle& handle) {
-  tensorflow::mutex_lock lock(execution_mutex_);
+  tensorflow::mutex_lock lock(execution_mutex_, __PRETTY_FUNCTION__);
   auto it = handle_to_execution_.find(handle.handle());
   if (it == handle_to_execution_.end()) {
     return NotFound("no execution record for execution handle: %lld",
@@ -76,7 +76,7 @@ tensorflow::Status ExecutionTracker::Unregister(const ExecutionHandle& handle) {
 
 StatusOr<const AsyncExecution*> ExecutionTracker::Resolve(
     const ExecutionHandle& handle) {
-  tensorflow::mutex_lock lock(execution_mutex_);
+  tensorflow::mutex_lock lock(execution_mutex_, __PRETTY_FUNCTION__);
   auto it = handle_to_execution_.find(handle.handle());
   if (it == handle_to_execution_.end()) {
     return NotFound("no execution record for execution handle: %lld",

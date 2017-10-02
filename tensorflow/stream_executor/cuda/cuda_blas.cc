@@ -525,7 +525,7 @@ template <typename FuncT, typename... Args>
 bool CUDABlas::DoBlasInternalImpl(FuncT cublas_func, Stream *stream,
                                   bool pointer_mode_host, bool err_on_failure,
                                   Args... args) {
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
 
   CHECK(blas_ != nullptr);
   if (!SetStream(stream)) {

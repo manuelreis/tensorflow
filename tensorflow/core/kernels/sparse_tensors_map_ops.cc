@@ -66,7 +66,7 @@ class SparseTensorsMap : public ResourceBase {
                                                 &persistent_values, &values));
     *values = sp.values();
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       int64 unique_st_handle = counter_++;  // increment is guarded on purpose
       sp_tensors_[unique_st_handle] =
           PersistentSparseTensor{persistent_ix, persistent_values, sp.shape()};
@@ -81,7 +81,7 @@ class SparseTensorsMap : public ResourceBase {
     sparse_tensors->clear();
     sparse_tensors->reserve(handles.size());
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       for (size_t i = 0; i < handles.size(); ++i) {
         const int64 handle = handles(i);
         auto sp_iter = sp_tensors_.find(handle);
@@ -126,7 +126,7 @@ class SparseTensorAccessingOp : public OpKernel {
 
   Status GetMap(OpKernelContext* ctx, bool is_writing,
                 SparseTensorsMap** sparse_tensors_map) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
 
     if (sparse_tensors_map_) {
       *sparse_tensors_map = sparse_tensors_map_;

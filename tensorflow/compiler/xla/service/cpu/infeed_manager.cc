@@ -26,7 +26,7 @@ InfeedBuffer::~InfeedBuffer() = default;
 InfeedManager::InfeedManager() : current_buffer_(nullptr) {}
 
 void InfeedManager::Reset() {
-  tensorflow::mutex_lock l(mu_);
+  tensorflow::mutex_lock l(mu_, __PRETTY_FUNCTION__);
   CHECK(!current_buffer_);
   for (auto buffer : enqueued_buffer_) {
     buffer->Done();
@@ -35,7 +35,7 @@ void InfeedManager::Reset() {
 }
 
 void InfeedManager::EnqueueBuffer(InfeedBuffer* buffer) {
-  tensorflow::mutex_lock l(mu_);
+  tensorflow::mutex_lock l(mu_, __PRETTY_FUNCTION__);
   bool was_empty = enqueued_buffer_.empty();
   enqueued_buffer_.push_back(buffer);
   if (was_empty) {
@@ -48,7 +48,7 @@ void InfeedManager::EnqueueBuffer(InfeedBuffer* buffer) {
 }
 
 InfeedBuffer* InfeedManager::BlockingDequeueBuffer() {
-  tensorflow::mutex_lock l(mu_);
+  tensorflow::mutex_lock l(mu_, __PRETTY_FUNCTION__);
   while (enqueued_buffer_.empty()) {
     cv_.wait(l);
   }
@@ -59,7 +59,7 @@ InfeedBuffer* InfeedManager::BlockingDequeueBuffer() {
 }
 
 void InfeedManager::ReleaseCurrentBuffer(int32 length, void* data) {
-  tensorflow::mutex_lock l(mu_);
+  tensorflow::mutex_lock l(mu_, __PRETTY_FUNCTION__);
   CHECK(current_buffer_);
   CHECK_EQ(length, current_buffer_->length());
   CHECK_EQ(data, current_buffer_->data());

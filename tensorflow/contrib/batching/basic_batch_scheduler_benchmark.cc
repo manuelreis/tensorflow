@@ -282,7 +282,7 @@ void LatencyBenchmark::RunBenchmark() {
 
   // Report benchmark measurements.
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     std::cout << "\t"
               << "99.9% latency: "
               << task_latency_millis_histogram_.Percentile(99.9) << "ms"
@@ -301,7 +301,7 @@ void LatencyBenchmark::ResetState() {
       scheduler_options_, process_batch_callback, &scheduler_));
 
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     task_latency_millis_histogram_.Clear();
     batch_size_histogram_.Clear();
   }
@@ -313,7 +313,7 @@ void LatencyBenchmark::ProcessBatch(
   const uint64 batch_completion_time = Env::Default()->NowMicros();
 
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     batch_size_histogram_.Add(batch->num_tasks());
   }
 
@@ -324,7 +324,7 @@ void LatencyBenchmark::ProcessBatch(
         batch_completion_time - task.start_time_micros();
 
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       task_latency_millis_histogram_.Add(task_latency_micros / 1000.0);
     }
   }

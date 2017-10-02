@@ -45,7 +45,7 @@ XlaOpRegistry::~XlaOpRegistry() = default;
 /* static */ void XlaOpRegistry::RegisterCompilationDevice(
     const string& device_name, const DeviceRegistration& registration) {
   XlaOpRegistry& registry = Instance();
-  mutex_lock lock(registry.mutex_);
+  mutex_lock lock(registry.mutex_, __PRETTY_FUNCTION__);
   auto result =
       registry.compilation_devices_.emplace(device_name, registration);
   CHECK(result.second || result.first->second.compilation_device_name ==
@@ -56,7 +56,7 @@ XlaOpRegistry::~XlaOpRegistry() = default;
     const string& compilation_device_name,
     gtl::ArraySlice<DataType> supported_types, BackendOpFilter op_filter) {
   XlaOpRegistry& registry = Instance();
-  mutex_lock lock(registry.mutex_);
+  mutex_lock lock(registry.mutex_, __PRETTY_FUNCTION__);
   auto result = registry.backends_.emplace(compilation_device_name, Backend());
   CHECK(result.second) << "Duplicate XLA backend registration "
                        << compilation_device_name;
@@ -72,7 +72,7 @@ XlaOpRegistry::~XlaOpRegistry() = default;
   // Lazily register the CPU and GPU JIT devices the first time
   // GetCompilationDevice is called.
   static void* registration_init = [&registry]() {
-    mutex_lock lock(registry.mutex_);
+    mutex_lock lock(registry.mutex_, __PRETTY_FUNCTION__);
     if (IsPlatformSupported(perftools::gputools::host::kHostPlatformId)) {
       DeviceRegistration& registration =
           registry.compilation_devices_[DEVICE_CPU];
@@ -93,7 +93,7 @@ XlaOpRegistry::~XlaOpRegistry() = default;
   }();
   (void)registration_init;
 
-  mutex_lock lock(registry.mutex_);
+  mutex_lock lock(registry.mutex_, __PRETTY_FUNCTION__);
   auto it = registry.compilation_devices_.find(device_name);
   if (it == registry.compilation_devices_.end()) return false;
   *registration = &it->second;
@@ -102,7 +102,7 @@ XlaOpRegistry::~XlaOpRegistry() = default;
 
 void XlaOpRegistry::RegisterCompilationKernels() {
   XlaOpRegistry& registry = Instance();
-  mutex_lock lock(registry.mutex_);
+  mutex_lock lock(registry.mutex_, __PRETTY_FUNCTION__);
 
   if (registry.jit_kernels_registered_) return;
   registry.jit_kernels_registered_ = true;
@@ -181,7 +181,7 @@ std::vector<const KernelDef*> XlaOpRegistry::DeviceKernels(
     const string& compilation_device_name) {
   std::vector<const KernelDef*> kernels;
   XlaOpRegistry& registry = Instance();
-  mutex_lock lock(registry.mutex_);
+  mutex_lock lock(registry.mutex_, __PRETTY_FUNCTION__);
   auto it = registry.backends_.find(compilation_device_name);
   CHECK(it != registry.backends_.end())
       << "Unknown backend " << compilation_device_name;
@@ -260,7 +260,7 @@ std::unique_ptr<XlaOpRegistry::OpRegistration> XlaOpRegistrationBuilder::Build(
 XlaOpRegistrar::XlaOpRegistrar(
     std::unique_ptr<XlaOpRegistry::OpRegistration> registration) {
   XlaOpRegistry& registry = XlaOpRegistry::Instance();
-  mutex_lock lock(registry.mutex_);
+  mutex_lock lock(registry.mutex_, __PRETTY_FUNCTION__);
   auto result = registry.ops_.emplace(registration->name, nullptr);
   if (!result.second) {
     LOG(FATAL) << "Duplicate XLA op registration " << registration->name;

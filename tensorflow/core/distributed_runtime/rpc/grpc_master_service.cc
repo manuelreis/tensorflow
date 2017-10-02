@@ -59,7 +59,7 @@ class GrpcMasterService : public AsyncServiceInterface {
   void Shutdown() override {
     bool did_shutdown = false;
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       if (!is_shutdown_) {
         LOG(INFO) << "Shutting down GrpcMasterService.";
         is_shutdown_ = true;
@@ -88,7 +88,7 @@ class GrpcMasterService : public AsyncServiceInterface {
 // to keep accepting new requests.
 #define ENQUEUE_REQUEST(method, supports_cancel)                              \
   do {                                                                        \
-    mutex_lock l(mu_);                                                        \
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);                                                        \
     if (!is_shutdown_) {                                                      \
       Call<GrpcMasterService, grpc::MasterService::AsyncService,              \
            method##Request, method##Response>::                               \

@@ -36,14 +36,14 @@ class Buffer : public ResourceBase {
 
   // the Buffer takes ownership of the Tuple
   void Put(Tuple* tuple) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     buf_.push_back(std::move(*tuple));
     non_empty_cond_var_.notify_one();  // maybe possible to optimize by reducing
                                        // how often this signal is sent
   }
 
   void Get(Tuple* tuple) {  // TODO(zhifengc): Support cancellation.
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     while (buf_.empty()) {
       non_empty_cond_var_.wait(l);
     }
@@ -53,7 +53,7 @@ class Buffer : public ResourceBase {
   }
 
   string DebugString() {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return strings::StrCat("Staging size: ", buf_.size());
   }
 

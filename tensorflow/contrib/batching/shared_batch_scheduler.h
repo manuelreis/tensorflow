@@ -265,7 +265,7 @@ class Queue {
   void CloseAndWaitUntilEmpty();
 
   bool closed() const {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return closed_;
   }
 
@@ -369,7 +369,7 @@ SharedBatchScheduler<TaskType>::~SharedBatchScheduler() {
   // queues.
   for (;;) {
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       if (queues_.empty()) {
         break;
       }
@@ -404,7 +404,7 @@ Status SharedBatchScheduler<TaskType>::AddQueue(
   }
 
   auto schedulable_batch_callback = [this] {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     schedulable_batch_cv_.notify_one();
   };
   auto internal_queue =
@@ -415,7 +415,7 @@ Status SharedBatchScheduler<TaskType>::AddQueue(
       new internal::QueueHandle<TaskType>(this->shared_from_this(),
                                           internal_queue.get()));
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     queues_.push_back(std::move(internal_queue));
     if (next_queue_to_schedule_ == queues_.end()) {
       next_queue_to_schedule_ = queues_.begin();
@@ -447,7 +447,7 @@ void SharedBatchScheduler<TaskType>::ThreadLogic() {
   // The queue with which 'batch_to_process' is associated.
   internal::Queue<TaskType>* queue_for_batch = nullptr;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
 
     const int num_queues = queues_.size();
     for (int num_queues_tried = 0;
@@ -511,7 +511,7 @@ Queue<TaskType>::Queue(
 
 template <typename TaskType>
 Queue<TaskType>::~Queue() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   DCHECK(IsEmptyInternal());
 
   // Close the (empty) open batch, so its destructor doesn't block.
@@ -528,7 +528,7 @@ Status Queue<TaskType>::Schedule(std::unique_ptr<TaskType>* task) {
 
   bool notify_of_schedulable_batch = false;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
 
     DCHECK(!closed_);
 
@@ -562,7 +562,7 @@ Status Queue<TaskType>::Schedule(std::unique_ptr<TaskType>* task) {
 
 template <typename TaskType>
 size_t Queue<TaskType>::NumEnqueuedTasks() const {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   size_t num_enqueued_tasks = 0;
   for (const auto& batch : batches_) {
     num_enqueued_tasks += batch->num_tasks();
@@ -572,7 +572,7 @@ size_t Queue<TaskType>::NumEnqueuedTasks() const {
 
 template <typename TaskType>
 size_t Queue<TaskType>::SchedulingCapacity() const {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   const int num_new_batches_schedulable =
       options_.max_enqueued_batches - batches_.size();
   const int open_batch_capacity =
@@ -588,7 +588,7 @@ std::unique_ptr<Batch<TaskType>> Queue<TaskType>::ScheduleBatch() {
   std::unique_ptr<Batch<TaskType>> batch_to_schedule;
 
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
 
     // Consider closing the open batch at this time, to schedule it.
     if (batches_.size() == 1 && IsOpenBatchSchedulable()) {
@@ -613,7 +613,7 @@ void Queue<TaskType>::ProcessBatch(std::unique_ptr<Batch<TaskType>> batch) {
   process_batch_callback_(std::move(batch));
 
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     --num_batches_being_processed_;
     if (empty_notification_ != nullptr && IsEmptyInternal()) {
       empty_notification_->Notify();
@@ -623,7 +623,7 @@ void Queue<TaskType>::ProcessBatch(std::unique_ptr<Batch<TaskType>> batch) {
 
 template <typename TaskType>
 bool Queue<TaskType>::IsEmpty() const {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return IsEmptyInternal();
 }
 
@@ -631,7 +631,7 @@ template <typename TaskType>
 void Queue<TaskType>::CloseAndWaitUntilEmpty() {
   Notification empty;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     closed_ = true;
     if (IsEmptyInternal()) {
       empty.Notify();

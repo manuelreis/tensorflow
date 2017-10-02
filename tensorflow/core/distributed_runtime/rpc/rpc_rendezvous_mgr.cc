@@ -81,7 +81,7 @@ class RpcRecvTensorCall : public BaseRecvTensorCall {
     req_.Clear();
     resp_.Clear();
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       status_ = Status::OK();
     }
     done_ = nullptr;
@@ -102,14 +102,14 @@ class RpcRecvTensorCall : public BaseRecvTensorCall {
 
   void StartAbort(const Status& s) override {
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       status_.Update(s);
     }
     opts_.StartCancel();
   }
 
   Status status() const override {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return status_;
   }
 
@@ -133,7 +133,7 @@ class RpcRecvTensorCall : public BaseRecvTensorCall {
                // Begin unbound arguments.
                const Status& s) {
           if (!s.ok()) {
-            mutex_lock l(mu_);
+            mutex_lock l(mu_, __PRETTY_FUNCTION__);
             status_.Update(s);
           }
           recv_done();
@@ -170,7 +170,7 @@ class RpcRecvTensorFreeList {
 
   RpcRecvTensorCall* New() {
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       if (!objects_.empty()) {
         RpcRecvTensorCall* result = objects_.back();
         objects_.pop_back();
@@ -183,7 +183,7 @@ class RpcRecvTensorFreeList {
   void Release(RpcRecvTensorCall* obj, WorkerCacheInterface* wc) {
     obj->Reset(wc);
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       if (objects_.size() < kMaxObjects) {
         objects_.push_back(obj);
         return;
@@ -221,7 +221,7 @@ class WorkerFreeListCache : public WorkerCacheInterface {
   }
 
   WorkerInterface* CreateWorker(const string& target) override {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     auto p = workers_.find(target);
     if (p != workers_.end()) {
       return p->second.worker;

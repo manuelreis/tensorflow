@@ -243,7 +243,7 @@ Status XlaCompilationCache::Compile(
   // protect the contents of the cache entry.
   Entry* entry;
   {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     // Find or create a cache entry.
     std::unique_ptr<Entry>& e = cache_[signature];
     if (!e) {
@@ -255,7 +255,7 @@ Status XlaCompilationCache::Compile(
   // Acquire the cache entry lock and compile, if necessary.
   // TODO(phawkins): this locking will need to be restructured when we implement
   // cache eviction.
-  mutex_lock entry_lock(entry->mu);
+  mutex_lock entry_lock(entry->mu, __PRETTY_FUNCTION__);
   if (!entry->compiled) {
     // Do the actual JIT compilation without holding the lock (it can take
     // a long time.)

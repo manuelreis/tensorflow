@@ -88,7 +88,7 @@ static int ExtractGpuWithoutStream(string device_name) {
 void StepStatsCollector::BuildCostModel(
     CostModelManager* cost_model_manager,
     const std::unordered_map<string, const Graph*>& device_map) {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
 
   // Hardware stats for gpu are available under a fake device named
   // "gpu:<id>/stream::all.
@@ -208,7 +208,7 @@ void StepStatsCollector::BuildCostModel(
 void StepStatsCollector::Save(const string& device, NodeExecStats* nt) {
   VLOG(1) << "Save dev " << device << " nt " << nt;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (!step_stats_ || collectedNodes >= kMaxCollectedNodes) {
       VLOG(1) << "step_stats_ nullptr or already collected too many nodes.";
       delete nt;
@@ -235,7 +235,7 @@ void StepStatsCollector::Save(const string& device, NodeExecStats* nt) {
 }
 
 void StepStatsCollector::Swap(StepStats* ss) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   CHECK(step_stats_);
   ss->Swap(step_stats_);
   collectedNodes = 0;

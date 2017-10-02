@@ -66,7 +66,7 @@ class PrintOp : public OpKernel {
       ctx->set_output(0, ctx->input(0));
     }
     if (first_n_ >= 0) {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       if (call_counter_ >= first_n_) return;
       call_counter_++;
     }

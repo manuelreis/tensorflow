@@ -221,7 +221,7 @@ Status CpuExecutable::ExecuteComputeFunction(
   uint64 end_micros = tensorflow::Env::Default()->NowMicros();
 
   {
-    tensorflow::mutex_lock lock(mutex_);
+    tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
     const double nanoseconds = (end_micros - start_micros) * 1000.0;
     execution_profile_.set_compute_time_ns(std::max(nanoseconds, 1.0));
 

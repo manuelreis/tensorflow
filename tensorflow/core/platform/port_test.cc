@@ -35,7 +35,7 @@ TEST(Port, AlignedMalloc) {
 
 TEST(ConditionVariable, WaitForMilliseconds_Timeout) {
   mutex m;
-  mutex_lock l(m);
+  mutex_lock l(m, __PRETTY_FUNCTION__);
   condition_variable cv;
   ConditionResult result = kCond_MaybeNotified;
   time_t start = time(NULL);
@@ -52,14 +52,14 @@ TEST(ConditionVariable, WaitForMilliseconds_Timeout) {
 TEST(ConditionVariable, WaitForMilliseconds_Signalled) {
   thread::ThreadPool pool(Env::Default(), "test", 1);
   mutex m;
-  mutex_lock l(m);
+  mutex_lock l(m, __PRETTY_FUNCTION__);
   condition_variable cv;
   time_t start = time(NULL);
   // Sleep for just 1 second then notify.  We have a timeout of 3 secs,
   // so the condition variable will notice the cv signal before the timeout.
   pool.Schedule([&m, &cv]() {
     Env::Default()->SleepForMicroseconds(1 * 1000 * 1000);
-    mutex_lock l(m);
+    mutex_lock l(m, __PRETTY_FUNCTION__);
     cv.notify_all();
   });
   EXPECT_EQ(WaitForMilliseconds(&l, &cv, 3000), kCond_MaybeNotified);

@@ -194,7 +194,7 @@ class HDFSRandomAccessFile : public RandomAccessFile {
 
   ~HDFSRandomAccessFile() override {
     if (file_ != nullptr) {
-      mutex_lock lock(mu_);
+      mutex_lock lock(mu_, __PRETTY_FUNCTION__);
       hdfs_->hdfsCloseFile(fs_, file_);
     }
   }
@@ -207,7 +207,7 @@ class HDFSRandomAccessFile : public RandomAccessFile {
     while (n > 0 && s.ok()) {
       // We lock inside the loop rather than outside so we don't block other
       // concurrent readers.
-      mutex_lock lock(mu_);
+      mutex_lock lock(mu_, __PRETTY_FUNCTION__);
       tSize r = hdfs_->hdfsPread(fs_, file_, static_cast<tOffset>(offset), dst,
                                  static_cast<tSize>(n));
       if (r > 0) {

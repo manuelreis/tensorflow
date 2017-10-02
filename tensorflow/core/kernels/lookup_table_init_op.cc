@@ -360,7 +360,7 @@ class InitializeTableOp : public OpKernel {
       : OpKernel(context) {}
 
   void Compute(OpKernelContext* ctx) override {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     lookup::InitializableLookupTable* table;
     OP_REQUIRES_OK(ctx,
                    GetInitializableLookupTable("table_handle", ctx, &table));
@@ -426,7 +426,7 @@ class InitializeTableFromTextFileOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* ctx) override {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     lookup::InitializableLookupTable* table;
     OP_REQUIRES_OK(ctx,
                    GetInitializableLookupTable("table_handle", ctx, &table));

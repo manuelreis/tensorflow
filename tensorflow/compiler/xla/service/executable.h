@@ -90,7 +90,7 @@ class Executable {
   // Returns the ExecutionProfile from executing on the device. This includes
   // the number of cycles taken for the computation or the compilation time.
   ExecutionProfile execution_profile() const {
-    tensorflow::mutex_lock lock(mutex_);
+    tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
     return execution_profile_;
   }
 

@@ -127,7 +127,7 @@ static port::ThreadPool* InitCudnnThreadpool() {
 
 static mutex cudnn_threadpool_mu(LINKER_INITIALIZED);
 static port::ThreadPool* GetCudaThreadpool() {
-  mutex_lock lock(cudnn_threadpool_mu);
+  mutex_lock lock(cudnn_threadpool_mu, __PRETTY_FUNCTION__);
   static port::ThreadPool* cudnn_threadpool = InitCudnnThreadpool();
   return cudnn_threadpool;
 }
@@ -1426,7 +1426,7 @@ bool CudnnSupport::DoRnnForwardImpl(
   }
 
   // check params size
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__, __PRETTY_FUNCTION__};
 
   if (!CheckRNNParameterSize(parent_, ToHandle(dnn_handle_), rnn_desc,
                              input_desc)) {
@@ -1548,7 +1548,7 @@ bool CudnnSupport::DoRnnBackwardImpl(
   }
 
   // check params size
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
 
   if (!CheckRNNParameterSize(parent_, ToHandle(dnn_handle_), rnn_desc,
                              input_desc)) {
@@ -1626,7 +1626,7 @@ CudnnSupport::createRnnDescriptor(int num_layers, int hidden_size,
                                   uint64 seed,
                                   ScratchAllocator* state_allocator) {
 #if CUDNN_VERSION >= 5000
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   std::unique_ptr<CudnnRnnDescriptor> rnn_desc(new CudnnRnnDescriptor(
       parent_, ToHandle(dnn_handle_), num_layers, hidden_size, input_size,
       ToCudnnRnnInputMode(input_mode), ToCudnnRnnDirectionMode(direction_mode),
@@ -1809,7 +1809,7 @@ bool CudnnSupport::DoConvolveImpl(
   ScopedConvolutionDescriptor conv{parent_, convolution_descriptor,
       CUDNN_DATA_FLOAT};
 
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                      AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -2099,7 +2099,7 @@ bool CudnnSupport::DoBatchNormalizationForwardImpl(
     DeviceMemory<T>* saved_mean, DeviceMemory<T>* saved_inv_var,
     bool is_training, std::function<const DeviceMemory<T>&()> var_to_inv_var,
     std::function<void()> inv_var_to_var) {
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                      AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -2171,7 +2171,7 @@ bool CudnnSupport::DoBatchNormalizationBackwardImpl(
     const dnn::BatchDescriptor& scale_offset_desc, const double epsilon,
     DeviceMemory<T>* x_backprop, DeviceMemory<T>* scale_backprop,
     DeviceMemory<T>* offset_backprop) {
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                      AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -2296,7 +2296,7 @@ bool CudnnSupport::DoConvolveBackwardDataImpl(
     DeviceMemory<T>* backward_input_data, ScratchAllocator* scratch_allocator,
     const dnn::AlgorithmConfig& algorithm_config,
     dnn::ProfileResult* output_profile_result) {
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                      AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -2531,7 +2531,7 @@ bool CudnnSupport::DoConvolveBackwardFilterImpl(
     DeviceMemory<T>* backward_filter_data, ScratchAllocator* scratch_allocator,
     const dnn::AlgorithmConfig& algorithm_config,
     dnn::ProfileResult* output_profile_result) {
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                      AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -2761,7 +2761,7 @@ bool CudnnSupport::DoConvolveBackwardBiasImpl(
     const DeviceMemory<T>& input_data,
     const dnn::BatchDescriptor& bias_descriptor,
     DeviceMemory<T>* backward_bias_data) {
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                      AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -2985,7 +2985,7 @@ bool CudnnSupport::DoBiasAdd(Stream* stream,
     }
   }
 
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                      AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -3018,7 +3018,7 @@ bool CudnnSupport::DoActivate(Stream* stream,
                               const DeviceMemory<float>& input_data,
                               DeviceMemory<float>* output_data,
                               uint64 options) {
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                      AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -3087,7 +3087,7 @@ bool CudnnSupport::DoPoolForward(
     const DeviceMemory<double>& input_data,
     const dnn::BatchDescriptor& output_dimensions,
     DeviceMemory<double>* output_data) {
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                         AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -3122,7 +3122,7 @@ bool CudnnSupport::DoPoolForward(
     const DeviceMemory<float>& input_data,
     const dnn::BatchDescriptor& output_dimensions,
     DeviceMemory<float>* output_data) {
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                      AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -3157,7 +3157,7 @@ bool CudnnSupport::DoPoolForward(
     const DeviceMemory<Eigen::half>& input_data,
     const dnn::BatchDescriptor& output_dimensions,
     DeviceMemory<Eigen::half>* output_data) {
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                      AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -3193,7 +3193,7 @@ bool CudnnSupport::DoPoolBackward(
     const DeviceMemory<double>& output_data,
     const DeviceMemory<double>& input_diff_data,
     DeviceMemory<double>* output_diff_data) {
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                         AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -3231,7 +3231,7 @@ bool CudnnSupport::DoPoolBackward(
     const DeviceMemory<float>& output_data,
     const DeviceMemory<float>& input_diff_data,
     DeviceMemory<float>* output_diff_data) {
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                      AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -3269,7 +3269,7 @@ bool CudnnSupport::DoPoolBackward(
     const DeviceMemory<Eigen::half>& output_data,
     const DeviceMemory<Eigen::half>& input_diff_data,
     DeviceMemory<Eigen::half>* output_diff_data) {
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                      AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -3320,7 +3320,7 @@ bool CudnnSupport::DoNormalizeWithDimensions(
   }
 
   // Launch the normalization.
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                      AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {
@@ -3363,7 +3363,7 @@ bool CudnnSupport::DoNormalizeBackwardWithDimensions(
     return false;
   }
 
-  mutex_lock lock{dnn_handle_mutex_};
+  mutex_lock lock{dnn_handle_mutex_, __PRETTY_FUNCTION__};
   auto status = wrap::cudnnSetStream(parent_, ToHandle(dnn_handle_),
                                      AsCUDAStreamValue(stream));
   if (status != CUDNN_STATUS_SUCCESS) {

@@ -97,7 +97,7 @@ class DenseUpdateOp : public OpKernel {
     context->forward_ref_input_to_ref_output(0, 0);
 
     if (use_exclusive_lock_) {
-      mutex_lock l(*context->input_ref_mutex(0));
+      mutex_lock l(*context->input_ref_mutex(0), __PRETTY_FUNCTION__);
       DoUpdate(context);
     } else {
       DoUpdate(context);

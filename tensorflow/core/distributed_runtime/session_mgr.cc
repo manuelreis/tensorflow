@@ -52,7 +52,7 @@ string SessionMgr::WorkerNameFromServerDef(const ServerDef& server_def) {
 
 Status SessionMgr::CreateSession(const string& session,
                                  const ServerDef& server_def) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   const string worker_name = WorkerNameFromServerDef(server_def);
 
   WorkerCacheInterface* worker_cache = nullptr;
@@ -73,7 +73,7 @@ Status SessionMgr::CreateSession(const string& session,
 }
 
 Status SessionMgr::DeleteSession(const string& session) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   auto it = sessions_.find(session);
   if (it != sessions_.end()) {
     sessions_.erase(it);
@@ -108,7 +108,7 @@ WorkerSession* SessionMgr::WorkerSessionForSessionUnlocked(
 }
 
 WorkerSession* SessionMgr::WorkerSessionForSession(const string& session) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return WorkerSessionForSessionUnlocked(session);
 }
 
@@ -126,12 +126,12 @@ WorkerSession* SessionMgr::WorkerSessionForGraphHandleUnlocked(
 
 WorkerSession* SessionMgr::WorkerSessionForGraphHandle(
     const string& graph_handle) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return WorkerSessionForGraphHandleUnlocked(graph_handle);
 }
 
 WorkerSession* SessionMgr::WorkerSessionForStepId(const int64 step_id) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   auto it = graphs_by_step_id_.find(step_id);
   if (it == graphs_by_step_id_.end()) {
     return &legacy_session_;
@@ -142,12 +142,12 @@ WorkerSession* SessionMgr::WorkerSessionForStepId(const int64 step_id) {
 
 void SessionMgr::AssociateGraphWithSession(const string& session,
                                            const string& graph_handle) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   sessions_by_graph_handle_[graph_handle] = session;
 }
 
 void SessionMgr::DisassociateGraphFromSession(const string& graph_handle) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   auto it = sessions_by_graph_handle_.find(graph_handle);
   if (it != sessions_by_graph_handle_.end()) {
     sessions_by_graph_handle_.erase(it);
@@ -156,12 +156,12 @@ void SessionMgr::DisassociateGraphFromSession(const string& graph_handle) {
 
 void SessionMgr::AssociateStepIdWithGraph(const string& graph_handle,
                                           const int64 step_id) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   graphs_by_step_id_[step_id] = graph_handle;
 }
 
 void SessionMgr::DisassociateStepIdFromGraph(const int64 step_id) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   auto it = graphs_by_step_id_.find(step_id);
   if (it != graphs_by_step_id_.end()) {
     graphs_by_step_id_.erase(it);

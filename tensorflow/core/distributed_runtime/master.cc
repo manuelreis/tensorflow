@@ -73,7 +73,7 @@ Master::Master(MasterEnv* env, double session_gc_seconds)
 
 Master::~Master() {
   if (gc_thread_) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     shutdown_ = true;
     shutdown_cv_.notify_all();
     delete gc_thread_;
@@ -83,7 +83,7 @@ Master::~Master() {
 void Master::GC() {
   Env* env = Env::Default();
   while (true) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     const int kTimeoutMilliseconds = 10 * 1000;  // 10 seconds.
     WaitForMilliseconds(&l, &shutdown_cv_, kTimeoutMilliseconds);
     if (shutdown_) {
@@ -169,7 +169,7 @@ class DeviceFinder {
 
   void Start() {
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       num_pending_ = targets_.size();
       if (num_pending_ == 0) {
         pending_zero_.notify_all();
@@ -192,7 +192,7 @@ class DeviceFinder {
   const int32 kLoggingPeriodMs = 10 * 1000;
 
   Status Wait() {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     // TODO(mrry): Propagate a timeout here, since `num_pending_` may
     // never become zero.
     while (num_pending_ != 0) {
@@ -215,7 +215,7 @@ class DeviceFinder {
                         std::vector<std::unique_ptr<Device>>* remote) {
     std::unordered_set<string> names(local.size());
     for (Device* dev : local) names.insert(dev->name());
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     for (Device* dev : found_) {
       const string& name = dev->name();
       if (names.insert(name).second && MatchFilters(name)) {
@@ -245,7 +245,7 @@ class DeviceFinder {
 
   void WhenFound(int target_index, const Status& s,
                  std::vector<Device*>* devices) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     seen_targets_[target_index] = true;
     if (!s.ok()) {
       LOG(ERROR) << "Master init: " << s;
@@ -317,7 +317,7 @@ void Master::CreateSession(const CreateSessionRequest* req,
     resp->set_session_handle(session->handle());
     // Insert into the session map, which takes ownership of the session.
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       CHECK(sessions_.insert({session->handle(), session}).second);
     }
   });
@@ -325,7 +325,7 @@ void Master::CreateSession(const CreateSessionRequest* req,
 
 void Master::ExtendSession(const ExtendSessionRequest* req,
                            ExtendSessionResponse* resp, MyClosure done) {
-  mu_.lock();
+  mu_.lock(__PRETTY_FUNCTION__);
   MasterSession* session = nullptr;
   session = gtl::FindPtrOrNull(sessions_, req->session_handle());
   if (session == nullptr) {
@@ -348,7 +348,7 @@ void Master::ExtendSession(const ExtendSessionRequest* req,
 
 void Master::PartialRunSetup(const PartialRunSetupRequest* req,
                              PartialRunSetupResponse* resp, MyClosure done) {
-  mu_.lock();
+  mu_.lock(__PRETTY_FUNCTION__);
   MasterSession* session = gtl::FindPtrOrNull(sessions_, req->session_handle());
   if (session == nullptr) {
     mu_.unlock();
@@ -367,7 +367,7 @@ void Master::PartialRunSetup(const PartialRunSetupRequest* req,
 
 void Master::RunStep(CallOptions* opts, const RunStepRequestWrapper* req,
                      MutableRunStepResponseWrapper* resp, MyClosure done) {
-  mu_.lock();
+  mu_.lock(__PRETTY_FUNCTION__);
   uint64 start_time = env_->env->NowMicros();
   MasterSession* session = gtl::FindPtrOrNull(sessions_, req->session_handle());
   if (session == nullptr) {
@@ -383,7 +383,7 @@ void Master::RunStep(CallOptions* opts, const RunStepRequestWrapper* req,
     session->Unref();
     uint64 done_time = env_->env->NowMicros();
     done(status);
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     last_1000_steps_.AddValue((done_time - start_time) / 1e9);
     ++step_count_;
   });
@@ -393,7 +393,7 @@ void Master::CloseSession(const CloseSessionRequest* req,
                           CloseSessionResponse* resp, MyClosure done) {
   MasterSession* session = nullptr;
   {
-    mu_.lock();
+    mu_.lock(__PRETTY_FUNCTION__);
     auto iter = sessions_.find(req->session_handle());
     if (iter == sessions_.end()) {
       mu_.unlock();
@@ -474,7 +474,7 @@ void Master::Reset(const ResetRequest* req, ResetResponse* resp,
   // (string->Session*) map.
   std::vector<MasterSession*> sessions_to_close;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     // NOTE(mrry): Transfer one reference to each session from the
     // `sessions_` map to the `sessions_to_close` vector.
     for (const auto& entry : sessions_) {

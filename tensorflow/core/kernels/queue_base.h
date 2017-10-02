@@ -70,7 +70,7 @@ class QueueBase : public QueueInterface {
   int32 capacity() const { return capacity_; }
 
   bool closed() {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     return closed_;
   }
 

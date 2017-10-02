@@ -294,7 +294,7 @@ Status SimpleGraphExecutionState::InitBaseGraph(
 
   CostModel costs(true /*is_global*/);
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     costs_.InitFromGraph(*new_graph.get());
     costs.MergeFromGlobal(costs_);
   }

@@ -221,7 +221,7 @@ void QuantizedGemm(OpKernelContext* tf_context, bool transpose_a,
                    qint32* c_data, int m, int n, int k, int offset_a,
                    int offset_b, int lda, int ldb, int ldc) {
 #ifdef TENSORFLOW_USE_META
-  mutex_lock library_lock(GetMutex());
+  mutex_lock library_lock(GetMutex(), __PRETTY_FUNCTION__);
   if (transpose_a) {
     if (transpose_b) {
       QuantizedGemmImpl<gemmlowp::meta::ColumnMajorWithSum,
@@ -256,7 +256,7 @@ void Requantize(OpKernelContext* tf_context, const qint32* input, int count,
                 float input_min, float input_max, float output_min,
                 float output_max, quint8* output) {
 #ifdef TENSORFLOW_USE_META
-  mutex_lock library_lock(GetMutex());
+  mutex_lock library_lock(GetMutex(), __PRETTY_FUNCTION__);
   typedef gemmlowp::meta::Transform1DParams<int32_t, uint8_t,
                                             gemmlowp::meta::Requantize>
       Params;
@@ -291,7 +291,7 @@ void Requantize(OpKernelContext* tf_context, const qint32* input, int count,
 void Dequantize(OpKernelContext* tf_context, const quint8* input, int count,
                 float range_min, float range_max, float* output) {
 #ifdef TENSORFLOW_USE_META
-  mutex_lock library_lock(GetMutex());
+  mutex_lock library_lock(GetMutex(), __PRETTY_FUNCTION__);
   typedef gemmlowp::meta::Transform1DParams<uint8_t, float,
                                             gemmlowp::meta::Dequantize>
       Params;
@@ -315,7 +315,7 @@ void Dequantize(OpKernelContext* tf_context, const quint8* input, int count,
 void Quantize(OpKernelContext* tf_context, const float* input, int count,
               float range_min, float range_max, quint8* output) {
 #ifdef TENSORFLOW_USE_META
-  mutex_lock library_lock(GetMutex());
+  mutex_lock library_lock(GetMutex(), __PRETTY_FUNCTION__);
   typedef gemmlowp::meta::Transform1DParams<float, uint8_t,
                                             gemmlowp::meta::Quantize>
       Params;
@@ -348,7 +348,7 @@ void QuantizedBiasAdd(OpKernelContext* tf_context, const quint8* input,
                       float bias_max, float output_min, float output_max,
                       qint32* output) {
 #ifdef TENSORFLOW_USE_META
-  mutex_lock library_lock(GetMutex());
+  mutex_lock library_lock(GetMutex(), __PRETTY_FUNCTION__);
   typedef gemmlowp::meta::Transform1DParams<uint8_t, int32_t,
                                             gemmlowp::meta::BiasAdd<uint8_t>>
       Params;
@@ -384,7 +384,7 @@ void QuantizedBiasAdd(OpKernelContext* tf_context, const quint8* input,
 void Clamp(OpKernelContext* tf_context, const quint8* input, int count,
            quint8 clamp_min, quint8 clamp_max, quint8* output) {
 #ifdef TENSORFLOW_USE_META
-  mutex_lock library_lock(GetMutex());
+  mutex_lock library_lock(GetMutex(), __PRETTY_FUNCTION__);
   typedef gemmlowp::meta::Transform1DParams<uint8_t, uint8_t,
                                             gemmlowp::meta::MinMax<uint8_t>>
       Params;

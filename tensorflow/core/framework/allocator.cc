@@ -72,7 +72,7 @@ class CPUAllocator : public Allocator {
     void* p = port::AlignedMalloc(num_bytes, alignment);
     if (cpu_allocator_collect_stats) {
       const std::size_t alloc_size = port::MallocExtension_GetAllocatedSize(p);
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       ++stats_.num_allocs;
       stats_.bytes_in_use += alloc_size;
       stats_.max_bytes_in_use =
@@ -87,14 +87,14 @@ class CPUAllocator : public Allocator {
     if (cpu_allocator_collect_stats) {
       const std::size_t alloc_size =
           port::MallocExtension_GetAllocatedSize(ptr);
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       stats_.bytes_in_use -= alloc_size;
     }
     port::AlignedFree(ptr);
   }
 
   void GetStats(AllocatorStats* stats) override {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     *stats = stats_;
   }
 

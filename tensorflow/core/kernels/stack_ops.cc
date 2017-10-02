@@ -55,14 +55,14 @@ class Stack : public ResourceBase {
       : elem_type_(elem_type), handle_(handle), closed_(false) {}
 
   Status Push(const TensorAndAllocation& value) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     TF_RETURN_IF_ERROR(CheckNotClosed());
     stack_.push_back(value);
     return Status::OK();
   }
 
   Status Pop(TensorAndAllocation* value) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     TF_RETURN_IF_ERROR(CheckNotClosed());
     if (stack_.empty()) {
       const string& stack_name = handle_.vec<string>()(1);
@@ -77,7 +77,7 @@ class Stack : public ResourceBase {
   // We don't swap the first tensor on the stack and any subsequent tensors
   // that share the buffer with the first tensor.
   bool IsUsefulToSwap(const Tensor& tensor) const {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (stack_.empty()) {
       return false;
     }
@@ -86,7 +86,7 @@ class Stack : public ResourceBase {
   }
 
   void Close() {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     stack_.clear();
     closed_ = true;
   }
@@ -94,7 +94,7 @@ class Stack : public ResourceBase {
   DataType ElemType() { return elem_type_; }
 
   string DebugString() override {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     const string& stack_name = handle_.vec<string>()(1);
     return strings::StrCat("Stack[", stack_name, "]");
   }

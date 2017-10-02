@@ -50,7 +50,7 @@ class TypedConditionalAccumulatorBase : public ConditionalAccumulatorBase {
    */
   void TryApplyGrad(int64 local_step, OpKernelContext* ctx) override {
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       if (local_step >= current_global_step_) {
         GradientTensorType* grad = nullptr;
         bool is_valid = GetAndValidateTensorInputForApplyGrad(ctx, &grad);

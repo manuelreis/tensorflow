@@ -30,13 +30,13 @@ HostStream::~HostStream() {}
 
 bool HostStream::EnqueueTask(std::function<void()> task) {
   {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     ++pending_tasks_;
   }
   host_executor_->Schedule([this, task]() {
     task();
     {
-      mutex_lock lock(mu_);
+      mutex_lock lock(mu_, __PRETTY_FUNCTION__);
       --pending_tasks_;
     }
     completion_condition_.notify_all();
@@ -45,7 +45,7 @@ bool HostStream::EnqueueTask(std::function<void()> task) {
 }
 
 void HostStream::BlockUntilDone() {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   while (pending_tasks_ != 0) {
     completion_condition_.wait(lock);
   }

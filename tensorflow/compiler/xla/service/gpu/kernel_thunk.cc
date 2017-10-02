@@ -36,7 +36,7 @@ KernelThunk::KernelThunk(
       kernel_name_(kernel_name) {}
 
 tensorflow::Status KernelThunk::Initialize(const GpuExecutable& executable) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
   if (loader_spec_) {
     // Already initialized by another thread.
     return tensorflow::Status::OK();
@@ -52,7 +52,7 @@ tensorflow::Status KernelThunk::Initialize(const GpuExecutable& executable) {
 }
 
 void KernelThunk::SetLaunchDimensions(const LaunchDimensions& launch_dims) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
   launch_dimensions_ = launch_dims;
 }
 
@@ -63,7 +63,7 @@ tensorflow::Status KernelThunk::ExecuteOnStream(
   LaunchDimensions launch_dimensions;
   const se::KernelBase* kernel = nullptr;
   {
-    tensorflow::mutex_lock lock(mutex_);
+    tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
     auto it = kernel_cache_.find(executor);
     if (kernel_cache_.end() == it) {
       it = kernel_cache_.emplace(executor, se::KernelBase(executor)).first;

@@ -169,7 +169,7 @@ void DoCompute(const ComputeOptions& options, OpKernelContext* const context) {
       const Status conversion_status =
           options.loss_updater->ConvertLabel(&example_label);
       if (!conversion_status.ok()) {
-        mutex_lock l(mu);
+        mutex_lock l(mu, __PRETTY_FUNCTION__);
         train_step_status = conversion_status;
         // Return from this worker thread - the calling thread is
         // responsible for checking context status and returning on error.

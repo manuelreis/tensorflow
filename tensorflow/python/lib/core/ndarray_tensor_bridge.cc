@@ -40,14 +40,14 @@ static std::vector<void*>* DecrefCache() {
 // pointer to the pyobj in a buffer to be dereferenced later when we're actually
 // holding the GIL.
 void DelayedNumpyDecref(void* data, size_t len, void* obj) {
-  mutex_lock ml(*DelayedDecrefLock());
+  mutex_lock ml(*DelayedDecrefLock(), __PRETTY_FUNCTION__);
   DecrefCache()->push_back(obj);
 }
 
 // Actually dereferences cached numpy arrays. REQUIRES being called while
 // holding the GIL.
 void ClearDecrefCache() {
-  mutex_lock ml(*DelayedDecrefLock());
+  mutex_lock ml(*DelayedDecrefLock(), __PRETTY_FUNCTION__);
   for (void* obj : *DecrefCache()) {
     Py_DECREF(reinterpret_cast<PyObject*>(obj));
   }

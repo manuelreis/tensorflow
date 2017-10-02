@@ -52,7 +52,7 @@ Rendezvous* BaseRendezvousMgr::Find(int64 step_id) {
 }
 
 BaseRemoteRendezvous* BaseRendezvousMgr::FindOrCreate(int64 step_id) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   Table::iterator iter = table_.find(step_id);
   if (iter == table_.end()) {
     auto rr = Create(step_id, worker_env_, worker_name_);
@@ -101,7 +101,7 @@ Status BaseRendezvousMgr::RecvLocal(int64 step_id,
 void BaseRendezvousMgr::Cleanup(int64 step_id) {
   Rendezvous* rendez = nullptr;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     Table::iterator iter = table_.find(step_id);
     if (iter != table_.end()) {
       rendez = iter->second;
@@ -116,7 +116,7 @@ void BaseRendezvousMgr::Cleanup(int64 step_id) {
 void BaseRendezvousMgr::CleanupAll() {
   std::vector<Rendezvous*> rendezs;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     for (const auto& entry : table_) {
       rendezs.push_back(entry.second);
     }
@@ -155,7 +155,7 @@ Status BaseRemoteRendezvous::Send(const Rendezvous::ParsedKey& parsed,
                                   const Tensor& val, const bool is_dead) {
   VLOG(1) << "BaseRemoteRendezvous Send " << this << " " << parsed.FullKey();
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (!status_.ok()) return status_;
   }
   if (!IsLocalDevice(worker_name_, parsed.src_device)) {
@@ -169,7 +169,7 @@ Status BaseRemoteRendezvous::Send(const Rendezvous::ParsedKey& parsed,
 Status BaseRemoteRendezvous::ValidateDevices(const ParsedKey& parsed,
                                              bool is_src) {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (!status_.ok()) return status_;
   }
   if (is_src && !IsLocalDevice(worker_name_, parsed.src_device)) {
@@ -293,7 +293,7 @@ void BaseRemoteRendezvous::StartAbort(const Status& s) {
   local_->StartAbort(s);
   {
     // Aborts all active RecvTensor calls.
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (status_.ok()) {
       status_ = s;
       for (BaseRecvTensorCall* call : active_) {
@@ -305,7 +305,7 @@ void BaseRemoteRendezvous::StartAbort(const Status& s) {
 }
 
 void BaseRemoteRendezvous::RegisterCall(BaseRecvTensorCall* call) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   if (!status_.ok()) {
     call->StartAbort(status_);
   } else {
@@ -314,7 +314,7 @@ void BaseRemoteRendezvous::RegisterCall(BaseRecvTensorCall* call) {
 }
 
 void BaseRemoteRendezvous::DeregisterCall(BaseRecvTensorCall* call) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   active_.erase(call);
 }
 

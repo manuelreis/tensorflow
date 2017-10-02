@@ -389,7 +389,7 @@ class FusedResizeAndPadConvFunctor {
     // threads, because we have a single shared resource. The platforms this is
     // aimed at have intra-op parallelism as their focus though, so it shouldn't
     // be an issue.
-    mutex_lock lock_buffer(im2col_buffer_resource->mu);
+    mutex_lock lock_buffer(im2col_buffer_resource->mu, __PRETTY_FUNCTION__);
     core::ScopedUnref unref_buffer(im2col_buffer_resource);
     T1* im2col_buffer = im2col_buffer_resource->data;
 
@@ -411,7 +411,7 @@ class FusedResizeAndPadConvFunctor {
     // the pixels are present, and before a new row of patches is started any
     // previously calculated rows that are needed are maintained, with new rows
     // calculated as required.
-    mutex_lock resize_lock_buffer(resize_cache_resource->mu);
+    mutex_lock resize_lock_buffer(resize_cache_resource->mu, __PRETTY_FUNCTION__);
     core::ScopedUnref unref_resized_cache(resize_cache_resource);
     task_params.resize_cache = resize_cache_resource->data;
 

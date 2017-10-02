@@ -169,7 +169,7 @@ class CUPTIManager {
 };
 
 Status CUPTIManager::EnableTrace(CUPTIClient *client) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   // TODO(pbar) Work out the minimal set to trace.
   // We can currently manage without driver/runtime tracing.
   // CUPTI_CALL(ActivityEnable(CUPTI_ACTIVITY_KIND_CONTEXT));
@@ -206,7 +206,7 @@ Status CUPTIManager::DisableTrace() {
   {
     // Don't acquire this lock until Flush returns, since Flush
     // will potentially cause callbacks into BufferCompleted.
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     client_ = nullptr;
   }
   return Status::OK();
@@ -227,7 +227,7 @@ void CUPTIManager::InternalBufferCompleted(CUcontext ctx, uint32_t streamId,
   VLOG(2) << "BufferCompleted";
   CUptiResult status;
   CUpti_Activity *record = NULL;
-  mutex_lock l(mu_);  // Hold mu_ while using client_.
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);  // Hold mu_ while using client_.
   if (client_ && validSize > 0) {
     do {
       status =
@@ -391,7 +391,7 @@ GPUTracerImpl::~GPUTracerImpl() {
 
 Status GPUTracerImpl::Start() {
   VLOG(1) << "GPUTracer::Start";
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   if (enabled_) {
     return errors::FailedPrecondition("GPUTracer is already enabled.");
   }
@@ -450,7 +450,7 @@ Status GPUTracerImpl::Start() {
 
 Status GPUTracerImpl::Stop() {
   VLOG(1) << "GPUTracer::Stop";
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   if (!enabled_) {
     return Status::OK();
   }
@@ -466,7 +466,7 @@ Status GPUTracerImpl::Stop() {
 void GPUTracerImpl::AddCorrelationId(uint32 correlation_id,
                                      const string &name) {
   VLOG(2) << correlation_id << " : " << name;
-  mutex_lock l(trace_mu_);
+  mutex_lock l(trace_mu_, __PRETTY_FUNCTION__);
   if (correlations_.size() >= kMaxRecords) return;
   correlations_.emplace(correlation_id, name);
 }
@@ -532,7 +532,7 @@ void GPUTracerImpl::AddCorrelationId(uint32 correlation_id,
 
 void GPUTracerImpl::ActivityCallback(const CUpti_Activity &record) {
   VLOG(2) << "ActivityCallback " << record.kind;
-  mutex_lock l(trace_mu_);
+  mutex_lock l(trace_mu_, __PRETTY_FUNCTION__);
   switch (record.kind) {
     case CUPTI_ACTIVITY_KIND_MEMCPY: {
       if (memcpy_records_.size() >= kMaxRecords) return;
@@ -558,7 +558,7 @@ void GPUTracerImpl::ActivityCallback(const CUpti_Activity &record) {
 }
 
 Status GPUTracerImpl::Collect(StepStatsCollector *collector) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   if (enabled_) {
     return errors::FailedPrecondition("GPUTracer is still enabled.");
   }
@@ -570,7 +570,7 @@ Status GPUTracerImpl::Collect(StepStatsCollector *collector) {
   const string memcpy_device = strings::StrCat(prefix, "/gpu:", id, "/memcpy");
   const string sync_device = strings::StrCat(prefix, "/gpu:", id, "/sync");
 
-  mutex_lock l2(trace_mu_);
+  mutex_lock l2(trace_mu_, __PRETTY_FUNCTION__);
   for (const auto &rec : kernel_records_) {
     auto it = correlations_.find(rec.correlation_id);
     const string name = (it != correlations_.cend()) ? it->second : "unknown";

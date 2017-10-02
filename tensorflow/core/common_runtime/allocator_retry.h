@@ -51,7 +51,7 @@ class AllocatorRetry {
 
 // Implementation details below
 inline void AllocatorRetry::NotifyDealloc() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   memory_returned_.notify_all();
 }
 

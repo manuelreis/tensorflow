@@ -118,7 +118,7 @@ class ScopedTracer {
   void Trace(CallbackT callback, TraceArgsT... args) {
     {
       // Instance tracers held in a block to limit the lock lifetime.
-      shared_lock lock{stream_exec_->mu_};
+      shared_lock lock{stream_exec_->mu_, __PRETTY_FUNCTION__};
       for (TraceListener *listener : stream_exec_->listeners_) {
         (listener->*callback)(correlation_id_,
                               std::forward<TraceArgsT>(args)...);
@@ -228,7 +228,7 @@ void StreamExecutor::Deallocate(DeviceMemoryBase *mem) {
 }
 
 void StreamExecutor::GetMemAllocs(std::map<void *, AllocRecord> *records_out) {
-  shared_lock lock{mu_};
+  shared_lock lock{mu_, __PRETTY_FUNCTION__};
   *records_out = mem_allocs_;
 }
 
@@ -258,7 +258,7 @@ port::Status StreamExecutor::SetDeviceSharedMemoryConfig(
 }
 
 const DeviceDescription &StreamExecutor::GetDeviceDescription() const {
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
   if (device_description_ != nullptr) {
     return *device_description_;
   }
@@ -362,7 +362,7 @@ StreamExecutor::createRnnStateTensorDescriptor(int num_layer, int batch_size,
 }
 
 dnn::DnnSupport *StreamExecutor::AsDnn() {
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
   if (dnn_ != nullptr) {
     return dnn_.get();
   }
@@ -372,7 +372,7 @@ dnn::DnnSupport *StreamExecutor::AsDnn() {
 }
 
 blas::BlasSupport *StreamExecutor::AsBlas() {
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
   if (blas_ != nullptr) {
     return blas_.get();
   }
@@ -382,7 +382,7 @@ blas::BlasSupport *StreamExecutor::AsBlas() {
 }
 
 fft::FftSupport *StreamExecutor::AsFft() {
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
   if (fft_ != nullptr) {
     return fft_.get();
   }
@@ -392,7 +392,7 @@ fft::FftSupport *StreamExecutor::AsFft() {
 }
 
 rng::RngSupport *StreamExecutor::AsRng() {
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
   if (rng_ != nullptr) {
     return rng_.get();
   }
@@ -694,7 +694,7 @@ void StreamExecutor::EnqueueOnBackgroundThread(std::function<void()> task) {
 
 void StreamExecutor::CreateAllocRecord(void *opaque, uint64 bytes) {
   if (FLAGS_check_gpu_leaks && opaque != nullptr && bytes != 0) {
-    mutex_lock lock{mu_};
+    mutex_lock lock{mu_, __PRETTY_FUNCTION__};
     mem_allocs_[opaque] = AllocRecord{
         bytes, ""};
   }
@@ -702,7 +702,7 @@ void StreamExecutor::CreateAllocRecord(void *opaque, uint64 bytes) {
 
 void StreamExecutor::EraseAllocRecord(void *opaque) {
   if (FLAGS_check_gpu_leaks && opaque != nullptr) {
-    mutex_lock lock{mu_};
+    mutex_lock lock{mu_, __PRETTY_FUNCTION__};
     if (mem_allocs_.find(opaque) == mem_allocs_.end()) {
       LOG(ERROR) << "Deallocating unknown pointer: "
                  << port::Printf("0x%p", opaque);
@@ -716,7 +716,7 @@ void StreamExecutor::EnableTracing(bool enabled) { tracing_enabled_ = enabled; }
 
 void StreamExecutor::RegisterTraceListener(TraceListener *listener) {
   {
-    mutex_lock lock{mu_};
+    mutex_lock lock{mu_, __PRETTY_FUNCTION__};
     if (listeners_.find(listener) != listeners_.end()) {
       LOG(INFO) << "Attempt to register already-registered listener, "
                 << listener;
@@ -730,7 +730,7 @@ void StreamExecutor::RegisterTraceListener(TraceListener *listener) {
 
 bool StreamExecutor::UnregisterTraceListener(TraceListener *listener) {
   {
-    mutex_lock lock{mu_};
+    mutex_lock lock{mu_, __PRETTY_FUNCTION__};
     if (listeners_.find(listener) == listeners_.end()) {
       LOG(INFO) << "Attempt to unregister unknown listener, " << listener;
       return false;
@@ -747,7 +747,7 @@ void StreamExecutor::SubmitTrace(TraceCallT trace_call, ArgsT &&... args) {
   if (tracing_enabled_) {
     {
       // instance tracers held in a block to limit the lock lifetime.
-      shared_lock lock{mu_};
+      shared_lock lock{mu_, __PRETTY_FUNCTION__};
       for (TraceListener *listener : listeners_) {
         (listener->*trace_call)(std::forward<ArgsT>(args)...);
       }

@@ -78,8 +78,8 @@ TF_CALL_GPU_NUMBER_TYPES(TENSOR_ARRAY_SET_ZERO_GPU);
 std::atomic<int64> TensorArray::tensor_array_counter{0};
 
 Status TensorArray::CopyShapesFrom(TensorArray* rhs) {
-  mutex_lock l(mu_);
-  mutex_lock l_rhs(rhs->mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
+  mutex_lock l_rhs(rhs->mu_, __PRETTY_FUNCTION__);
   TF_RETURN_IF_ERROR(LockedReturnIfClosed());
   TF_RETURN_IF_ERROR(rhs->LockedReturnIfClosed());
   if (tensors_.size() != rhs->tensors_.size()) {

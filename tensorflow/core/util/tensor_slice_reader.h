@@ -143,7 +143,7 @@ bool TensorSliceReader::CopySliceData(const string& name,
   std::vector<std::pair<TensorSlice, string>> details;
   const TensorSliceSet* tss;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     tss = FindTensorSlice(name, slice, &details);
     if (!tss && !all_shards_loaded_) {
       VLOG(1) << "Did not find slice in preferred shard, loading all shards."

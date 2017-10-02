@@ -39,7 +39,7 @@ class BlockingCounter {
       DCHECK_NE(((v + 2) & ~1), 0);
       return;  // either count has not dropped to 0, or waiter is not waiting
     }
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     DCHECK(!notified_);
     notified_ = true;
     cond_var_.notify_all();
@@ -48,7 +48,7 @@ class BlockingCounter {
   inline void Wait() {
     unsigned int v = state_.fetch_or(1, std::memory_order_acq_rel);
     if ((v >> 1) == 0) return;
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     while (!notified_) {
       cond_var_.wait(l);
     }
@@ -58,7 +58,7 @@ class BlockingCounter {
   inline bool WaitFor(std::chrono::milliseconds ms) {
     unsigned int v = state_.fetch_or(1, std::memory_order_acq_rel);
     if ((v >> 1) == 0) return true;
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     while (!notified_) {
       const std::cv_status status = cond_var_.wait_for(l, ms);
       if (status == std::cv_status::timeout) {

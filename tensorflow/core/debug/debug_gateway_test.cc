@@ -97,7 +97,7 @@ TEST_F(SessionDebugMinusAXTest, RunSimpleNetwork) {
   debug_gateway.SetNodeCompletionCallback(
       [&mu, &completed_nodes_w_outputs, &completed_nodes_wo_outputs](
           const string& node_name, const bool any_output) {
-        mutex_lock l(mu);
+        mutex_lock l(mu, __PRETTY_FUNCTION__);
         if (any_output) {
           completed_nodes_w_outputs.push_back(node_name);
         } else {
@@ -117,7 +117,7 @@ TEST_F(SessionDebugMinusAXTest, RunSimpleNetwork) {
        &is_refs_val,
        &callbacks_done](const string& node_name, const int output_slot,
                         const Tensor& tensor_value, const bool is_ref) {
-        mutex_lock l(mu);
+        mutex_lock l(mu, __PRETTY_FUNCTION__);
         tensors_initialized.push_back(tensor_value.IsInitialized());
         tensor_vals.insert(std::make_pair(node_name, tensor_value));
         output_slots_val.push_back(output_slot);
@@ -251,7 +251,7 @@ TEST_F(SessionDebugMinusAXTest, RunSimpleNetworkWithTwoDebugNodesInserted) {
   debug_gateway.SetNodeCompletionCallback(
       [&mu, &debug_identity_node_name, &debug_nan_count_node_name,
        &completed_debug_nodes](const string& node_name, const bool any_output) {
-        mutex_lock l(mu);
+        mutex_lock l(mu, __PRETTY_FUNCTION__);
         if (any_output && (node_name == debug_identity_node_name ||
                            node_name == debug_nan_count_node_name)) {
           completed_debug_nodes.push_back(node_name);
@@ -268,7 +268,7 @@ TEST_F(SessionDebugMinusAXTest, RunSimpleNetworkWithTwoDebugNodesInserted) {
        &debug_nan_count_tensor_vals,
        &callbacks_done](const string& node_name, const int output_slot,
                         const Tensor& tensor_value, const bool is_ref) {
-        mutex_lock l(mu);
+        mutex_lock l(mu, __PRETTY_FUNCTION__);
         if (node_name == y_) {
           watched_tensor_vals.push_back(tensor_value);
         } else if (node_name == debug_identity_node_name && output_slot == 0) {
@@ -379,7 +379,7 @@ TEST_F(SessionDebugMinusAXTest,
        &debug_identity_tensor_vals, &callbacks_done, &kConcurrentRuns](
            const string& node_name, const int output_slot,
            const Tensor& tensor_value, const bool is_ref) {
-        mutex_lock l(mu);
+        mutex_lock l(mu, __PRETTY_FUNCTION__);
 
         if (node_name == a_debug_identity_node_name && output_slot == 0) {
           debug_identity_tensor_vals["a"] = tensor_value;
@@ -422,7 +422,7 @@ TEST_F(SessionDebugMinusAXTest,
     {
       // Let the concurrent runs watch different tensors.
 
-      mutex_lock l(run_lock);
+      mutex_lock l(run_lock, __PRETTY_FUNCTION__);
 
       if (run_counter == 0) {
         // Let the 1st concurrent run watch a.
@@ -467,7 +467,7 @@ TEST_F(SessionDebugMinusAXTest,
   delete tp;
 
   {
-    mutex_lock l(mu);
+    mutex_lock l(mu, __PRETTY_FUNCTION__);
 
     ASSERT_EQ(kConcurrentRuns, val_callback_count);
     ASSERT_EQ(kConcurrentRuns, debug_identity_tensor_vals.size());
@@ -549,7 +549,7 @@ TEST_F(SessionDebugOutputSlotWithoutOngoingEdgeTest,
                                       &debug_identity_tensor_vals](
       const string& node_name, const int output_slot,
       const Tensor& tensor_value, const bool is_ref) {
-    mutex_lock l(mu);
+    mutex_lock l(mu, __PRETTY_FUNCTION__);
 
     if (node_name == debug_identity_node_name && output_slot == 0) {
       debug_identity_tensor_vals.push_back(tensor_value);
@@ -682,7 +682,7 @@ TEST_F(SessionDebugVariableTest, WatchUninitializedVariableWithDebugOps) {
   debug_gateway.SetNodeCompletionCallback(
       [this, &mu, &debug_identity_node_name, &completed_debug_nodes,
        &callbacks_done](const string& node_name, const bool any_output) {
-        mutex_lock l(mu);
+        mutex_lock l(mu, __PRETTY_FUNCTION__);
         if (any_output && (node_name == debug_identity_node_name)) {
           completed_debug_nodes.push_back(node_name);
         }
@@ -694,7 +694,7 @@ TEST_F(SessionDebugVariableTest, WatchUninitializedVariableWithDebugOps) {
       [this, &mu, &debug_identity_node_name, &debug_identity_tensor_vals,
        &callbacks_done](const string& node_name, const int output_slot,
                         const Tensor& tensor_value, const bool is_ref) {
-        mutex_lock l(mu);
+        mutex_lock l(mu, __PRETTY_FUNCTION__);
         if (node_name == debug_identity_node_name && output_slot == 0) {
           // output_slot == 0 carries the debug signal. Same below.
           debug_identity_tensor_vals.push_back(tensor_value);
@@ -774,7 +774,7 @@ TEST_F(SessionDebugVariableTest, VariableAssignWithDebugOps) {
       [this, &mu, &debug_identity_node_name, &debug_nan_count_node_name,
        &completed_debug_nodes,
        &callbacks_done](const string& node_name, const bool any_output) {
-        mutex_lock l(mu);
+        mutex_lock l(mu, __PRETTY_FUNCTION__);
         if (any_output && (node_name == debug_identity_node_name ||
                            node_name == debug_nan_count_node_name)) {
           completed_debug_nodes.push_back(node_name);
@@ -789,7 +789,7 @@ TEST_F(SessionDebugVariableTest, VariableAssignWithDebugOps) {
        &debug_identity_tensor_vals, &debug_nan_count_tensor_vals,
        &callbacks_done](const string& node_name, const int output_slot,
                         const Tensor& tensor_value, const bool is_ref) {
-        mutex_lock l(mu);
+        mutex_lock l(mu, __PRETTY_FUNCTION__);
         if (node_name == debug_identity_node_name && output_slot == 0) {
           // output_slot == 0 carries the debug signal. Same below.
           debug_identity_tensor_vals.push_back(tensor_value);
@@ -930,7 +930,7 @@ TEST_F(SessionDebugGPUSwitchTest, RunSwitchWithHostMemoryDebugOp) {
   debug_gateway.SetNodeCompletionCallback(
       [&mu, &completed_nodes_w_outputs, &completed_nodes_wo_outputs](
           const string& node_name, const bool any_output) {
-        mutex_lock l(mu);
+        mutex_lock l(mu, __PRETTY_FUNCTION__);
         if (any_output) {
           completed_nodes_w_outputs.push_back(node_name);
         } else {
@@ -944,7 +944,7 @@ TEST_F(SessionDebugGPUSwitchTest, RunSwitchWithHostMemoryDebugOp) {
       [this, &mu, &debug_identity_node_name, &debug_identity_tensor_vals,
        &callbacks_done](const string& node_name, const int output_slot,
                         const Tensor& tensor_value, const bool is_ref) {
-        mutex_lock l(mu);
+        mutex_lock l(mu, __PRETTY_FUNCTION__);
         if (node_name == debug_identity_node_name && output_slot == 0) {
           debug_identity_tensor_vals.push_back(tensor_value);
         }

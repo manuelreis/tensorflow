@@ -41,7 +41,7 @@ Status PriorityQueue::Initialize() {
   Status s = TypedQueue::Initialize();
   if (!s.ok()) return s;
 
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   if (component_dtypes_[0] != DT_INT64) {
     return errors::InvalidArgument(
         "PriorityQueue priority index component must be type int64, but "
@@ -72,7 +72,7 @@ void PriorityQueue::TryEnqueue(const Tuple& tuple, OpKernelContext* ctx,
   CancellationToken token = cm->get_cancellation_token();
   bool already_cancelled;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     already_cancelled = !cm->RegisterCallback(
         token, [this, cm, token]() { Cancel(kEnqueue, cm, token); });
     if (!already_cancelled) {
@@ -137,7 +137,7 @@ void PriorityQueue::TryEnqueueMany(const Tuple& tuple, OpKernelContext* ctx,
   CancellationToken token = cm->get_cancellation_token();
   bool already_cancelled;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     already_cancelled = !cm->RegisterCallback(
         token, [this, cm, token]() { Cancel(kEnqueue, cm, token); });
     if (!already_cancelled) {
@@ -198,7 +198,7 @@ void PriorityQueue::TryDequeue(OpKernelContext* ctx,
   CancellationToken token = cm->get_cancellation_token();
   bool already_cancelled;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     already_cancelled = !cm->RegisterCallback(
         token, [this, cm, token]() { Cancel(kDequeue, cm, token); });
     if (!already_cancelled) {
@@ -289,7 +289,7 @@ void PriorityQueue::TryDequeueMany(int num_elements, OpKernelContext* ctx,
   CancellationToken token = cm->get_cancellation_token();
   bool already_cancelled;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     already_cancelled = !cm->RegisterCallback(
         token, [this, cm, token]() { Cancel(kDequeue, cm, token); });
     if (!already_cancelled) {

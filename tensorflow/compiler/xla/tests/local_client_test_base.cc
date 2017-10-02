@@ -33,7 +33,7 @@ StatusOr<perftools::gputools::DeviceMemoryBase> TestAllocator::Allocate(
     int device_ordinal, uint64 size, bool retry_on_failure) {
   VLOG(2) << "Allocate(" << device_ordinal << ", " << size << ")";
   {
-    tensorflow::mutex_lock lock(count_mutex_);
+    tensorflow::mutex_lock lock(count_mutex_, __PRETTY_FUNCTION__);
     allocation_count_++;
     device_allocation_count_[device_ordinal]++;
   }
@@ -44,7 +44,7 @@ tensorflow::Status TestAllocator::Deallocate(
     int device_ordinal, perftools::gputools::DeviceMemoryBase* mem) {
   VLOG(2) << "Deallocate(" << device_ordinal << ")";
   {
-    tensorflow::mutex_lock lock(count_mutex_);
+    tensorflow::mutex_lock lock(count_mutex_, __PRETTY_FUNCTION__);
     deallocation_count_++;
     device_deallocation_count_[device_ordinal]++;
   }
@@ -52,12 +52,12 @@ tensorflow::Status TestAllocator::Deallocate(
 }
 
 int64 TestAllocator::allocation_count() const {
-  tensorflow::mutex_lock lock(count_mutex_);
+  tensorflow::mutex_lock lock(count_mutex_, __PRETTY_FUNCTION__);
   return allocation_count_;
 }
 
 int64 TestAllocator::allocation_count(int device_ordinal) const {
-  tensorflow::mutex_lock lock(count_mutex_);
+  tensorflow::mutex_lock lock(count_mutex_, __PRETTY_FUNCTION__);
   auto it = device_allocation_count_.find(device_ordinal);
   if (it == device_allocation_count_.end()) {
     return 0;
@@ -67,12 +67,12 @@ int64 TestAllocator::allocation_count(int device_ordinal) const {
 }
 
 int64 TestAllocator::deallocation_count() const {
-  tensorflow::mutex_lock lock(count_mutex_);
+  tensorflow::mutex_lock lock(count_mutex_, __PRETTY_FUNCTION__);
   return deallocation_count_;
 }
 
 int64 TestAllocator::deallocation_count(int device_ordinal) const {
-  tensorflow::mutex_lock lock(count_mutex_);
+  tensorflow::mutex_lock lock(count_mutex_, __PRETTY_FUNCTION__);
   auto it = device_deallocation_count_.find(device_ordinal);
   if (it == device_deallocation_count_.end()) {
     return 0;

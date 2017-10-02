@@ -93,7 +93,7 @@ void ReEncodeConsts(GraphDef* gdef) {
 Status GrpcSession::CreateImpl(CallOptions* call_options,
                                const GraphDef& graph) {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (!handle_.empty()) {
       return errors::InvalidArgument("A session is alive.");
     }
@@ -105,7 +105,7 @@ Status GrpcSession::CreateImpl(CallOptions* call_options,
   CreateSessionResponse resp;
   Status s = master_->CreateSession(call_options, &req, &resp);
   if (s.ok()) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     swap(handle_, *(resp.mutable_session_handle()));
     current_graph_version_ = resp.graph_version();
   }
@@ -129,14 +129,14 @@ Status GrpcSession::ExtendImpl(CallOptions* call_options,
                                const GraphDef& graph) {
   bool handle_is_empty;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     handle_is_empty = handle_.empty();
   }
   if (handle_is_empty) {
     // Session was unitialized, so simply initialize the session with 'graph'.
     return Create(graph);
   }
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   ExtendSessionRequest req;
   req.set_session_handle(handle_);
   *req.mutable_graph_def() = graph;
@@ -247,7 +247,7 @@ Status GrpcSession::RunProto(CallOptions* call_options,
                              MutableRunStepRequestWrapper* req,
                              MutableRunStepResponseWrapper* resp) {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (handle_.empty()) {
       return errors::InvalidArgument("A session is not created yet....");
     }
@@ -266,7 +266,7 @@ Status GrpcSession::PRunSetup(const std::vector<string>& input_names,
   PartialRunSetupResponse resp;
   CallOptions call_options;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (handle_.empty()) {
       return errors::InvalidArgument("A session is not created yet....");
     }
@@ -301,7 +301,7 @@ Status GrpcSession::PRun(const string& handle,
 Status GrpcSession::Close() {
   CloseSessionRequest req;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (handle_.empty()) {
       return errors::InvalidArgument("A session is not created yet....");
     }

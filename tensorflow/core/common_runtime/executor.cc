@@ -1052,7 +1052,7 @@ class ExecutorState {
     // frame. Return true iff the execution of the frame is done.
     inline bool DecrementOutstandingOps(const GraphView* gview, int64 iter,
                                         TaggedNodeSeq* ready) {
-      mutex_lock l(mu);
+      mutex_lock l(mu, __PRETTY_FUNCTION__);
       return DecrementOutstandingOpsLocked(gview, iter, ready);
     }
 
@@ -1532,7 +1532,7 @@ void ExecutorState::Process(TaggedNode tagged_node, int64 scheduled_usec) {
     // TODO(misard) Replace with a finer-grain enabling flag once we
     // add better optional debugging support.
     if (vlog_ && VLOG_IS_ON(1)) {
-      mutex_lock l(input_frame->mu);
+      mutex_lock l(input_frame->mu, __PRETTY_FUNCTION__);
       input_frame->GetIteration(input_iter)->mark_started(item.pending_id);
     }
 
@@ -1739,7 +1739,7 @@ Status ExecutorState::PrepareInputs(const NodeItem& item, Entry* first_input,
       inp->tensor = entry->val.get();
     } else {
       {
-        mutex_lock ml(*entry->ref_mu);
+        mutex_lock ml(*entry->ref_mu, __PRETTY_FUNCTION__);
         if (!entry->ref->IsInitialized() && !IsInitializationOp(item.node)) {
           return AttachDef(errors::FailedPrecondition(
                                "Attempting to use uninitialized value ",
@@ -1755,7 +1755,7 @@ Status ExecutorState::PrepareInputs(const NodeItem& item, Entry* first_input,
         // tensor but is given a ref to a tensor.  Need to deref it
         // under the mutex.
         {
-          mutex_lock l(*(entry->ref_mu));
+          mutex_lock l(*(entry->ref_mu), __PRETTY_FUNCTION__);
           DCHECK(!entry->val_field_is_set);
           entry->val.Init(*entry->ref);
           entry->val_field_is_set = true;
@@ -1824,7 +1824,7 @@ Status ExecutorState::ProcessOutputs(const NodeItem& item, OpKernelContext* ctx,
       // Sanity check of output tensor types.
       DataType dtype;
       if (val.is_ref()) {
-        mutex_lock ml(*val.mutex_if_ref);
+        mutex_lock ml(*val.mutex_if_ref, __PRETTY_FUNCTION__);
         dtype = MakeRefType(val->dtype());
       } else {
         dtype = val->dtype();
@@ -1841,7 +1841,7 @@ Status ExecutorState::ProcessOutputs(const NodeItem& item, OpKernelContext* ctx,
             Tensor to_log;
             {
               // Dereference the tensor under the lock.
-              mutex_lock l(*out->ref_mu);
+              mutex_lock l(*out->ref_mu, __PRETTY_FUNCTION__);
               to_log = *out->ref;
             }
             LogMemory::RecordTensorOutput(ctx->op_kernel().name(),
@@ -1908,7 +1908,7 @@ void ExecutorState::PropagateOutputs(const TaggedNode& tagged_node,
     // Fast path for nodes types that don't need special handling
     DCHECK_EQ(input_frame, output_frame);
     // Normal path for most nodes
-    mutex_lock l(input_frame->mu);
+    mutex_lock l(input_frame->mu, __PRETTY_FUNCTION__);
     output_frame->ActivateNodes(item, is_dead, output_iter, outputs, ready);
     is_frame_done = input_frame->DecrementOutstandingOpsLocked(
         &impl_->gview_, input_iter, ready);
@@ -1920,7 +1920,7 @@ void ExecutorState::PropagateOutputs(const TaggedNode& tagged_node,
     output_iter = 0;
     {
       const NodeItem* item = impl_->gview_.node(node->id());
-      mutex_lock l(output_frame->mu);
+      mutex_lock l(output_frame->mu, __PRETTY_FUNCTION__);
       if (is_constant) {
         // Propagate to all active iterations if this is a loop invariant.
         output_frame->AddLoopInv(item, (*outputs)[0], ready);
@@ -1933,7 +1933,7 @@ void ExecutorState::PropagateOutputs(const TaggedNode& tagged_node,
         input_frame->DecrementOutstandingOps(&impl_->gview_, input_iter, ready);
   } else if (item->is_exit) {
     if (is_dead) {
-      mutex_lock l(input_frame->mu);
+      mutex_lock l(input_frame->mu, __PRETTY_FUNCTION__);
       // Stop and remember this node if it is a dead exit.
       if (input_iter == input_frame->iteration_count) {
         input_frame->dead_exits.push_back(node);
@@ -1944,7 +1944,7 @@ void ExecutorState::PropagateOutputs(const TaggedNode& tagged_node,
       output_frame = input_frame->parent_frame;
       output_iter = input_frame->parent_iter;
       {
-        mutex_lock l(output_frame->mu);
+        mutex_lock l(output_frame->mu, __PRETTY_FUNCTION__);
         output_frame->ActivateNodes(item, is_dead, output_iter, outputs, ready);
       }
       is_frame_done = input_frame->DecrementOutstandingOps(&impl_->gview_,
@@ -1952,7 +1952,7 @@ void ExecutorState::PropagateOutputs(const TaggedNode& tagged_node,
     }
   } else {
     DCHECK(IsNextIteration(node));
-    mutex_lock l(input_frame->mu);
+    mutex_lock l(input_frame->mu, __PRETTY_FUNCTION__);
     if (is_dead) {
       // Stop the deadness propagation.
       output_frame = nullptr;
@@ -2010,7 +2010,7 @@ bool ExecutorState::NodeDone(const Status& s, const Node* node,
   bool abort_run = false;
   if (!s.ok()) {
     // Some error happened. This thread of computation is done.
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (status_.ok()) {
       abort_run = true;
       status_ = s;
@@ -2092,7 +2092,7 @@ inline void ExecutorState::MaybeMarkCompleted(FrameState* frame, int64 iter,
   // add better optional debugging support.
   if (vlog_ && VLOG_IS_ON(1)) {
     const NodeItem* item = impl_->gview_.node(node_id);
-    mutex_lock l(frame->mu);
+    mutex_lock l(frame->mu, __PRETTY_FUNCTION__);
     frame->GetIteration(iter)->mark_completed(item->pending_id);
   }
 }
@@ -2201,13 +2201,13 @@ void ExecutorState::DumpIterationState(const FrameState* frame,
 }
 
 void ExecutorState::DumpState() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   if (!dumped_on_error_) {
     LOG(WARNING) << "Dumping state";
     for (auto& frame : outstanding_frames_) {
       LOG(WARNING) << frame.first;
       FrameState* frame_state = frame.second;
-      mutex_lock frame_lock(frame_state->mu);
+      mutex_lock frame_lock(frame_state->mu, __PRETTY_FUNCTION__);
       for (IterationState* iteration : frame_state->iterations) {
         LOG(WARNING) << "  Iteration:";
         DumpIterationState(frame_state, iteration);
@@ -2218,7 +2218,7 @@ void ExecutorState::DumpState() {
 }
 
 void ExecutorState::Finish() {
-  mu_.lock();
+  mu_.lock(__PRETTY_FUNCTION__);
   auto status = status_;
   auto done_cb = std::move(done_cb_);
   auto runner = std::move(runner_);
@@ -2245,7 +2245,7 @@ void ExecutorState::FindOrCreateChildFrame(FrameState* frame, int64 iter,
   const string child_name = MakeFrameName(frame, iter, enter_name);
 
   {
-    mutex_lock executor_lock(mu_);
+    mutex_lock executor_lock(mu_, __PRETTY_FUNCTION__);
     auto it = outstanding_frames_.find(child_name);
     if (it != outstanding_frames_.end()) {
       *child = it->second;
@@ -2274,12 +2274,12 @@ void ExecutorState::FindOrCreateChildFrame(FrameState* frame, int64 iter,
       new IterationState(temp->pending_counts, temp->total_input_tensors);
 
   {
-    mutex_lock executor_lock(mu_);
+    mutex_lock executor_lock(mu_, __PRETTY_FUNCTION__);
     auto it = outstanding_frames_.find(child_name);
     if (it != outstanding_frames_.end()) {
       *child = it->second;
     } else {
-      mutex_lock frame_lock(frame->mu);
+      mutex_lock frame_lock(frame->mu, __PRETTY_FUNCTION__);
       frame->GetIteration(iter)->outstanding_frame_count++;
       outstanding_frames_[child_name] = temp;
       *child = temp;
@@ -2294,7 +2294,7 @@ void ExecutorState::DeleteFrame(FrameState* frame, TaggedNodeSeq* ready) {
   FrameState* parent_frame = frame->parent_frame;
   int64 parent_iter = frame->parent_iter;
   if (parent_frame != nullptr) {
-    mutex_lock paranet_frame_lock(parent_frame->mu);
+    mutex_lock paranet_frame_lock(parent_frame->mu, __PRETTY_FUNCTION__);
     // Propagate all the dead exits to the parent frame.
     for (const Node* node : frame->dead_exits) {
       auto parent_iter_state = parent_frame->GetIteration(parent_iter);
@@ -2343,7 +2343,7 @@ void ExecutorState::DeleteFrame(FrameState* frame, TaggedNodeSeq* ready) {
   const string& frame_name = frame->frame_name;
   if (vlog_) VLOG(2) << "Delete frame " << frame_name;
   {
-    mutex_lock executor_lock(mu_);
+    mutex_lock executor_lock(mu_, __PRETTY_FUNCTION__);
     outstanding_frames_.erase(frame_name);
   }
   delete frame;
@@ -2353,7 +2353,7 @@ void ExecutorState::CleanupFramesIterations(FrameState* frame, int64 iter,
                                             TaggedNodeSeq* ready) {
   bool is_frame_done = false;
   {
-    mutex_lock frame_lock(frame->mu);
+    mutex_lock frame_lock(frame->mu, __PRETTY_FUNCTION__);
     frame->GetIteration(iter)->outstanding_frame_count--;
     is_frame_done = frame->CleanupIterations(&impl_->gview_, iter, ready);
   }

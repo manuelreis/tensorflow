@@ -45,7 +45,7 @@ string MakeUniquePath(string name) {
 
   int count;
   {
-    mutex_lock lock(instance.counts_mutex);
+    mutex_lock lock(instance.counts_mutex, __PRETTY_FUNCTION__);
     count = instance.counts[name]++;
   }
 

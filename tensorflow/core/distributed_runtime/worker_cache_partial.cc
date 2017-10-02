@@ -28,7 +28,7 @@ namespace tensorflow {
 
 bool WorkerCachePartial::GetDeviceLocalityNonBlocking(
     const string& device_name, DeviceLocality* locality) {
-  mutex_lock lock(mu_);  // could use reader lock
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);  // could use reader lock
   const auto& iter = device_status_cache_.find(device_name);
   if (iter != device_status_cache_.end()) {
     *locality = iter->second.locality();
@@ -46,7 +46,7 @@ void WorkerCachePartial::GetDeviceLocalityAsync(const string& device_name,
       Status s = RefreshDeviceStatus(device_name);
       if (s.ok()) {
         if (!GetDeviceLocalityNonBlocking(device_name, locality)) {
-          mutex_lock lock(mu_);
+          mutex_lock lock(mu_, __PRETTY_FUNCTION__);
           const auto& iter = device_status_cache_.find(device_name);
           if (iter == device_status_cache_.end()) {
             s = errors::Unavailable("No known remote device: ", device_name);
@@ -82,7 +82,7 @@ Status WorkerCachePartial::RefreshDeviceStatus(const string& device_name) {
     GetStatusResponse resp;
     s = rwi->GetStatus(&req, &resp);
     if (s.ok()) {
-      mutex_lock lock(mu_);
+      mutex_lock lock(mu_, __PRETTY_FUNCTION__);
       for (auto& dev_attr : resp.device_attributes()) {
         device_status_cache_[dev_attr.name()] = dev_attr;
       }
@@ -92,7 +92,7 @@ Status WorkerCachePartial::RefreshDeviceStatus(const string& device_name) {
 }
 
 void WorkerCachePartial::FlushStatusCache() {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   device_status_cache_.clear();
 }
 

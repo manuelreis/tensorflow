@@ -74,7 +74,7 @@ std::vector<OptionalTensor> SnapshotResourceVariables(OpKernelContext* ctx,
     Var* variable = nullptr;
     ResourceHandle handle = HandleFromInput(ctx, first_variable + i);
     if (LookupResource(ctx, handle, &variable).ok()) {
-      mutex_lock lock(*variable->mu());
+      mutex_lock lock(*variable->mu(), __PRETTY_FUNCTION__);
       snapshot[i].name = handle.name();
       snapshot[i].present = true;
       snapshot[i].value = *variable->tensor();
@@ -223,7 +223,7 @@ void XlaDeviceLaunchOp::Compute(OpKernelContext* ctx) {
                             }));
     core::ScopedUnref s(variable);
 
-    mutex_lock ml(*variable->mu());
+    mutex_lock ml(*variable->mu(), __PRETTY_FUNCTION__);
     OP_REQUIRES(ctx, variable->tensor()->dtype() == write.type,
                 errors::Internal("Mismatched type in variable write"));
     if (!variable->tensor()->shape().IsSameSize(write.shape)) {

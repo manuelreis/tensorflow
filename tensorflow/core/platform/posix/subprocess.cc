@@ -76,8 +76,8 @@ SubProcess::SubProcess(int nfds)
 }
 
 SubProcess::~SubProcess() {
-  mutex_lock procLock(proc_mu_);
-  mutex_lock dataLock(data_mu_);
+  mutex_lock procLock(proc_mu_, __PRETTY_FUNCTION__);
+  mutex_lock dataLock(data_mu_, __PRETTY_FUNCTION__);
   pid_ = -1;
   running_ = false;
   FreeArgs();
@@ -112,8 +112,8 @@ void SubProcess::ClosePipes() {
 
 void SubProcess::SetProgram(const string& file,
                             const std::vector<string>& argv) {
-  mutex_lock procLock(proc_mu_);
-  mutex_lock dataLock(data_mu_);
+  mutex_lock procLock(proc_mu_, __PRETTY_FUNCTION__);
+  mutex_lock dataLock(data_mu_, __PRETTY_FUNCTION__);
   if (running_) {
     LOG(FATAL) << "SetProgram called after the process was started.";
     return;
@@ -139,8 +139,8 @@ void SubProcess::SetProgram(const string& file,
 }
 
 void SubProcess::SetChannelAction(Channel chan, ChannelAction action) {
-  mutex_lock procLock(proc_mu_);
-  mutex_lock dataLock(data_mu_);
+  mutex_lock procLock(proc_mu_, __PRETTY_FUNCTION__);
+  mutex_lock dataLock(data_mu_, __PRETTY_FUNCTION__);
   if (running_) {
     LOG(FATAL) << "SetChannelAction called after the process was started.";
   } else if (!chan_valid(chan)) {
@@ -154,8 +154,8 @@ void SubProcess::SetChannelAction(Channel chan, ChannelAction action) {
 }
 
 bool SubProcess::Start() {
-  mutex_lock procLock(proc_mu_);
-  mutex_lock dataLock(data_mu_);
+  mutex_lock procLock(proc_mu_, __PRETTY_FUNCTION__);
+  mutex_lock dataLock(data_mu_, __PRETTY_FUNCTION__);
   if (running_) {
     LOG(ERROR) << "Start called after the process was started.";
     return false;
@@ -285,7 +285,7 @@ bool SubProcess::Wait() {
 
 bool SubProcess::WaitInternal(int* status) {
   // The waiter must release proc_mu_ while waiting in order for Kill() to work.
-  proc_mu_.lock();
+  proc_mu_.lock(__PRETTY_FUNCTION__);
   bool running = running_;
   pid_t pid = pid_;
   proc_mu_.unlock();
@@ -307,7 +307,7 @@ bool SubProcess::WaitInternal(int* status) {
     }
   }
 
-  proc_mu_.lock();
+  proc_mu_.lock(__PRETTY_FUNCTION__);
   if ((running_ == running) && (pid_ == pid)) {
     running_ = false;
     pid_ = -1;
@@ -317,7 +317,7 @@ bool SubProcess::WaitInternal(int* status) {
 }
 
 bool SubProcess::Kill(int signal) {
-  proc_mu_.lock();
+  proc_mu_.lock(__PRETTY_FUNCTION__);
   bool running = running_;
   pid_t pid = pid_;
   proc_mu_.unlock();
@@ -336,7 +336,7 @@ int SubProcess::Communicate(const string* stdin_input, string* stdout_output,
   string* iobufs[kNFds];
   int fd_count = 0;
 
-  proc_mu_.lock();
+  proc_mu_.lock(__PRETTY_FUNCTION__);
   bool running = running_;
   proc_mu_.unlock();
   if (!running) {
@@ -367,7 +367,7 @@ int SubProcess::Communicate(const string* stdin_input, string* stdout_output,
 
   // Lock data_mu_ but not proc_mu_ while communicating with the child process
   // in order for Kill() to be able to terminate the child from another thread.
-  data_mu_.lock();
+  data_mu_.lock(__PRETTY_FUNCTION__);
 
   // Initialize the poll() structures and buffer tracking.
   for (int i = 0; i < kNFds; i++) {

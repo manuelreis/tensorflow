@@ -63,7 +63,7 @@ Status TypedQueue<SubQueue>::Initialize() {
         ShapeListString(component_shapes_));
   }
 
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   queues_.reserve(num_components());
   for (int i = 0; i < num_components(); ++i) {
     queues_.push_back(SubQueue());
@@ -110,7 +110,7 @@ int64 SizeOf(const std::priority_queue<TensorPair, U, V>& sq) {
 template <typename SubQueue>
 int64 TypedQueue<SubQueue>::MemoryUsed() const {
   int memory_size = 0;
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   for (const auto& sq : queues_) {
     memory_size += SizeOf(sq);
   }

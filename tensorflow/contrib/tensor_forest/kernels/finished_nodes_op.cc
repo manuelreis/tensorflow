@@ -128,7 +128,7 @@ void Evaluate(const EvaluateParams& params, mutex* mutex, int32 start,
 
     visited.insert(leaf);
   }
-  mutex_lock m(*mutex);
+  mutex_lock m(*mutex, __PRETTY_FUNCTION__);
   final_finished_leaves->insert(finished_leaves.begin(), finished_leaves.end());
   final_stale->insert(stale.begin(), stale.end());
 }

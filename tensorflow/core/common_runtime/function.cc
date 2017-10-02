@@ -292,7 +292,7 @@ class CallOp : public AsyncOpKernel {
 };
 
 const FunctionBody* FunctionLibraryRuntimeImpl::GetFunctionBody(Handle h) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   CHECK_LE(static_cast<Handle>(0), h);
   CHECK_LT(h, func_graphs_.size());
   return func_graphs_[h];
@@ -407,7 +407,7 @@ Status FunctionLibraryRuntimeImpl::Instantiate(
     Handle* handle) {
   const string key = Canonicalize(function_name, attrs);
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     *handle = gtl::FindWithDefault(table_, key, kInvalidHandle);
     if (*handle != kInvalidHandle) {
       return Status::OK();
@@ -439,7 +439,7 @@ Status FunctionLibraryRuntimeImpl::Instantiate(
   }
 
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     *handle = gtl::FindWithDefault(table_, key, kInvalidHandle);
     if (*handle != kInvalidHandle) {
       delete fbody;
@@ -504,7 +504,7 @@ Status FunctionLibraryRuntimeImpl::CreateItem(Handle handle, Item** item) {
 
 Status FunctionLibraryRuntimeImpl::GetOrCreateItem(Handle handle, Item** item) {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (handle >= items_.size()) {
       return errors::NotFound("Function handle ", handle,
                               " is not valid. Likely an internal error.");
@@ -520,7 +520,7 @@ Status FunctionLibraryRuntimeImpl::GetOrCreateItem(Handle handle, Item** item) {
   TF_RETURN_IF_ERROR(CreateItem(handle, item));
 
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (items_[handle] == nullptr) {
       // Install *item in items_.
       items_[handle] = *item;
@@ -603,12 +603,12 @@ struct CustomCreatorSingleton {
   CustomKernelCreator custom_creator = nullptr;
 
   void Set(CustomKernelCreator cb) {
-    mutex_lock l(mu);
+    mutex_lock l(mu, __PRETTY_FUNCTION__);
     custom_creator = cb;
   }
 
   CustomKernelCreator Get() {
-    mutex_lock l(mu);
+    mutex_lock l(mu, __PRETTY_FUNCTION__);
     return custom_creator;
   }
 };

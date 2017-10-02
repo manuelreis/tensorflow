@@ -78,7 +78,7 @@ Worker::PartialRunState* Worker::FindPartialRun(const string& graph_handle,
                                                 int step_id) {
   const std::pair<string, int> k(graph_handle, step_id);
   Worker::PartialRunState* prun_state = nullptr;
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   auto it = partial_runs_.find(k);
   if (it != partial_runs_.end()) {
     prun_state = it->second.get();
@@ -96,7 +96,7 @@ void Worker::InsertPartialRunLocked(const string& graph_handle, int step_id,
 
 void Worker::RemovePartialRun(const string& graph_handle, int step_id) {
   const std::pair<string, int> k(graph_handle, step_id);
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   partial_runs_.erase(partial_runs_.find(k));
 }
 
@@ -106,7 +106,7 @@ void Worker::MaybeCallFinalCallback(const string& graph_handle, int step_id,
   StatusCallback done;
   Status s;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     auto it = partial_runs_.find(k);
     if (it != partial_runs_.end()) {
       // If we found the partial_run, we call the final callback, if it
@@ -126,7 +126,7 @@ void Worker::SetOrCallFinalCallback(const string& graph_handle, int step_id,
                                     StatusCallback done, const Status& s) {
   const std::pair<string, int> k(graph_handle, step_id);
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     auto it = partial_runs_.find(k);
     if (!it->second->executor_done) {
       // If we found the partial_run, we set the final callback to call only
@@ -216,7 +216,7 @@ void Worker::DoRunGraph(CallOptions* opts, RunGraphRequestWrapper* request,
   });
   CancellationToken token;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     token = cancellation_manager_->get_cancellation_token();
     bool already_cancelled = !cancellation_manager_->RegisterCallback(
         token, [cm]() { cm->StartCancel(); });
@@ -240,7 +240,7 @@ void Worker::DoRunGraph(CallOptions* opts, RunGraphRequestWrapper* request,
         }
         opts->ClearCancelCallback();
         {
-          mutex_lock l(mu_);
+          mutex_lock l(mu_, __PRETTY_FUNCTION__);
           cancellation_manager_->DeregisterCallback(token);
         }
         delete cm;
@@ -306,7 +306,7 @@ void Worker::DoPartialRunGraph(CallOptions* opts,
   if (partial_run_state == nullptr) {
     CancellationToken token;
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       // Insert the new partial run into the partial_runs_ map.
       partial_run_state = new PartialRunState(cm);
       InsertPartialRunLocked(graph_handle, step_id, partial_run_state);
@@ -319,7 +319,7 @@ void Worker::DoPartialRunGraph(CallOptions* opts,
         nullptr /* cost_graph */, cm, in,
         [this, token, graph_handle, step_id, cm](Status s) {
           {
-            mutex_lock l(mu_);
+            mutex_lock l(mu_, __PRETTY_FUNCTION__);
             cancellation_manager_->DeregisterCallback(token);
           }
           MaybeCallFinalCallback(graph_handle, step_id, s);

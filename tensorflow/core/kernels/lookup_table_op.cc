@@ -163,7 +163,7 @@ class MutableHashTableOfScalars final : public LookupInterface {
   MutableHashTableOfScalars(OpKernelContext* ctx, OpKernel* kernel) {}
 
   size_t size() const override {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return table_.size();
   }
 
@@ -173,7 +173,7 @@ class MutableHashTableOfScalars final : public LookupInterface {
     const auto key_values = key.flat<K>();
     auto value_values = value->flat<V>();
 
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     for (int64 i = 0; i < key_values.size(); ++i) {
       value_values(i) = gtl::FindWithDefault(
           table_, SubtleMustCopyUnlessStringOrFloat(key_values(i)),
@@ -187,7 +187,7 @@ class MutableHashTableOfScalars final : public LookupInterface {
     const auto key_values = keys.flat<K>();
     const auto value_values = values.flat<V>();
 
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (clear) {
       table_.clear();
     }
@@ -210,7 +210,7 @@ class MutableHashTableOfScalars final : public LookupInterface {
   }
 
   Status ExportValues(OpKernelContext* ctx) override {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     int64 size = table_.size();
 
     Tensor* keys;
@@ -259,7 +259,7 @@ class MutableHashTableOfTensors final : public LookupInterface {
   }
 
   size_t size() const override {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return table_.size();
   }
 
@@ -270,7 +270,7 @@ class MutableHashTableOfTensors final : public LookupInterface {
     auto value_values = value->flat_inner_dims<V, 2>();
     int64 value_dim = value_shape_.dim_size(0);
 
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     for (int64 i = 0; i < key_values.size(); ++i) {
       ValueArray* value_vec = gtl::FindOrNull(
           table_, SubtleMustCopyUnlessStringOrFloat(key_values(i)));
@@ -293,7 +293,7 @@ class MutableHashTableOfTensors final : public LookupInterface {
     const auto value_values = values.flat_inner_dims<V, 2>();
     int64 value_dim = value_shape_.dim_size(0);
 
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (clear) {
       table_.clear();
     }
@@ -320,7 +320,7 @@ class MutableHashTableOfTensors final : public LookupInterface {
   }
 
   Status ExportValues(OpKernelContext* ctx) override {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     int64 size = table_.size();
     int64 value_dim = value_shape_.dim_size(0);
 
@@ -422,7 +422,7 @@ class MutableDenseHashTable final : public LookupInterface {
   }
 
   size_t size() const override LOCKS_EXCLUDED(mu_) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return num_entries_;
   }
 
@@ -442,7 +442,7 @@ class MutableDenseHashTable final : public LookupInterface {
     auto value_matrix = value->shaped<V, 2>({num_elements, value_size});
     const auto default_flat = default_value.flat<V>();
 
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     const auto key_buckets_matrix =
         key_buckets_.AccessTensor(ctx)->template matrix<K>();
     const auto value_buckets_matrix =
@@ -498,7 +498,7 @@ class MutableDenseHashTable final : public LookupInterface {
                                      expected_shape.DebugString(), " got ",
                                      key.shape().DebugString());
     }
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     // For simplicity we assume that all keys in the input result in inserts
     // rather than updates. That means we may grow the table even though we
     // don't need to. As long as the number of keys inserted in one call is
@@ -516,7 +516,7 @@ class MutableDenseHashTable final : public LookupInterface {
 
   Status ImportValues(OpKernelContext* ctx, const Tensor& keys,
                       const Tensor& values) override LOCKS_EXCLUDED(mu_) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     num_buckets_ = keys.dim_size(0);
     key_buckets_ = PersistentTensor(keys);
     value_buckets_ = PersistentTensor(values);
@@ -538,7 +538,7 @@ class MutableDenseHashTable final : public LookupInterface {
   }
 
   Status ExportValues(OpKernelContext* ctx) override LOCKS_EXCLUDED(mu_) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     Tensor key_buckets_tensor = *key_buckets_.AccessTensor(ctx);
     Tensor value_buckets_tensor = *value_buckets_.AccessTensor(ctx);
     TF_RETURN_IF_ERROR(ctx->set_output("keys", key_buckets_tensor));

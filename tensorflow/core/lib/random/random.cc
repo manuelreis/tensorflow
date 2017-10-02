@@ -30,7 +30,7 @@ std::mt19937_64* InitRng() {
 uint64 New64() {
   static std::mt19937_64* rng = InitRng();
   static mutex mu;
-  mutex_lock l(mu);
+  mutex_lock l(mu, __PRETTY_FUNCTION__);
   return (*rng)();
 }
 

@@ -41,7 +41,7 @@ class ObtainNextOp : public OpKernel {
     // Obtain mutex for the "counter" tensor.
     mutex* mu;
     OP_REQUIRES_OK(ctx, ctx->input_ref_mutex("counter", &mu));
-    mutex_lock l(*mu);
+    mutex_lock l(*mu, __PRETTY_FUNCTION__);
     // Increment "counter" tensor by 1.
     Tensor counter_tensor;
     OP_REQUIRES_OK(ctx, ctx->mutable_input("counter", &counter_tensor, true));

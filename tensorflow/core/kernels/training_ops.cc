@@ -336,7 +336,7 @@ std::vector<mutex_lock> MaybeLockMutexesInOrder(
   for (auto input : acquire_order) {
     mutex* mu = GetMutex(ctx, input);
     if (mu != nullptr) {
-      locks.emplace_back(*mu);
+      locks.emplace_back(*mu, __PRETTY_FUNCTION__);
     }
   }
   return locks;
@@ -350,7 +350,7 @@ Status GetInputTensor(OpKernelContext* ctx, int input, bool lock_held,
       if (lock_held) {
         *out = *var->tensor();
       } else {
-        mutex_lock ml(*var->mu());
+        mutex_lock ml(*var->mu(), __PRETTY_FUNCTION__);
         *out = *var->tensor();
       }
       return Status::OK();
@@ -461,7 +461,7 @@ class ApplyAdadeltaOp : public OpKernel {
 
   void Compute(OpKernelContext* ctx) override {
     if (use_exclusive_lock_) {
-      mutex_lock l1(*GetMutex(ctx, 0));
+      mutex_lock l1(*GetMutex(ctx, 0), __PRETTY_FUNCTION__);
       // Don't try to acquire a lock on the second ref as they share the same
       // mutex.
       //
@@ -612,7 +612,7 @@ class SparseApplyAdadeltaOp : public OpKernel {
     //
     // mutex* mu_accum = ctx->input_ref_mutex(1);
     if (use_exclusive_lock_) {
-      mu_var->lock();
+      mu_var->lock(__PRETTY_FUNCTION__);
     }
     Tensor var;
     OP_REQUIRES_OK(ctx, GetInputTensor(ctx, 0, use_exclusive_lock_, &var));

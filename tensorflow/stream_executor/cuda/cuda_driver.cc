@@ -70,14 +70,14 @@ class CreatedContexts {
  public:
   // Returns whether context is a member of the live set.
   static bool Has(CUcontext context) {
-    shared_lock lock{mu_};
+    shared_lock lock{mu_, __PRETTY_FUNCTION__};
     return Live()->find(context) != Live()->end();
   }
 
   // Adds context to the live set.
   static CudaContext* Add(CUcontext context) {
     CHECK(context != nullptr);
-    mutex_lock lock{mu_};
+    mutex_lock lock{mu_, __PRETTY_FUNCTION__};
     auto cuda_context = new CudaContext(context, next_id_++);
     Live()->insert(
         std::make_pair(context, std::unique_ptr<CudaContext>(cuda_context)));
@@ -87,7 +87,7 @@ class CreatedContexts {
   // Removes context from the live set.
   static void Remove(CUcontext context) {
     CHECK(context != nullptr);
-    mutex_lock lock{mu_};
+    mutex_lock lock{mu_, __PRETTY_FUNCTION__};
     auto it = Live()->find(context);
     CHECK(it != Live()->end()) << context;
     Live()->erase(it);
@@ -250,7 +250,7 @@ static port::ThreadPool *InitializeDriverExecutor() {
 }
 
 port::ThreadPool *GetDriverExecutor() {
-  mutex_lock lock(driver_executor_threadpool_mu);
+  mutex_lock lock(driver_executor_threadpool_mu, __PRETTY_FUNCTION__);
   static port::ThreadPool *thread_pool = InitializeDriverExecutor();
   return thread_pool;
 }
@@ -417,7 +417,7 @@ static port::Status InternalInit() {
   static bool set = false;
   static mutex *init_mu = new mutex;
 
-  mutex_lock lock(*init_mu);
+  mutex_lock lock(*init_mu, __PRETTY_FUNCTION__);
   if (!set) {
     init_retval = InternalInit();
     set = true;

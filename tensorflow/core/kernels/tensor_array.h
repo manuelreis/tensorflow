@@ -181,7 +181,7 @@ class TensorArray : public ResourceBase {
   template <typename Device, typename T>
   Status WriteOrAggregate(OpKernelContext* ctx, const int32 index,
                           PersistentTensor* value) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return LockedWriteOrAggregate<Device, T>(ctx, index, value);
   }
 
@@ -189,7 +189,7 @@ class TensorArray : public ResourceBase {
   Status WriteOrAggregateMany(OpKernelContext* ctx,
                               const std::vector<int32>& indices,
                               std::vector<PersistentTensor>* values) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     int32 i = 0;
     for (const int32 ix : indices) {
       Status s = LockedWriteOrAggregate<Device, T>(ctx, ix, &(*values)[i]);
@@ -217,14 +217,14 @@ class TensorArray : public ResourceBase {
   template <typename Device, typename T>
   Status Read(OpKernelContext* ctx, const int32 index,
               PersistentTensor* value) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return LockedRead<Device, T>(ctx, index, value);
   }
 
   template <typename Device, typename T>
   Status ReadMany(OpKernelContext* ctx, const std::vector<int32>& indices,
                   std::vector<PersistentTensor>* values) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     values->clear();
     values->resize(indices.size());
     int32 i = 0;
@@ -239,12 +239,12 @@ class TensorArray : public ResourceBase {
   DataType ElemType() const { return dtype_; }
 
   PartialTensorShape ElemShape() {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return element_shape_;
   }
 
   Status SetElemShape(const PartialTensorShape& candidate) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     PartialTensorShape new_element_shape_;
     Status s = element_shape_.MergeWith(candidate, &new_element_shape_);
     if (!s.ok()) {
@@ -255,19 +255,19 @@ class TensorArray : public ResourceBase {
   }
 
   string DebugString() override {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     CHECK(!closed_);
     return strings::StrCat("TensorArray[", tensors_.size(), "]");
   }
 
   bool IsClosed() {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return closed_;
   }
 
   // Return the size of the TensorArray.
   Status Size(int32* size) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     TF_RETURN_IF_ERROR(LockedReturnIfClosed());
     *size = tensors_.size();
     return Status::OK();
@@ -275,7 +275,7 @@ class TensorArray : public ResourceBase {
 
   // Record the size of the TensorArray after an unpack or split.
   Status SetMarkedSize(int32 size) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     TF_RETURN_IF_ERROR(LockedReturnIfClosed());
     if (!is_grad_) {
       marked_size_ = size;
@@ -285,7 +285,7 @@ class TensorArray : public ResourceBase {
 
   // Return the marked size of the TensorArray.
   Status MarkedSize(int32* size) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     TF_RETURN_IF_ERROR(LockedReturnIfClosed());
     *size = marked_size_;
     return Status::OK();
@@ -293,7 +293,7 @@ class TensorArray : public ResourceBase {
 
   // Return the size that should be used by pack or concat op.
   Status PackOrConcatSize(int32* size) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     TF_RETURN_IF_ERROR(LockedReturnIfClosed());
     *size = is_grad_ ? marked_size_ : tensors_.size();
     return Status::OK();
@@ -302,17 +302,17 @@ class TensorArray : public ResourceBase {
   // Once a TensorArray is being used for gradient calculations, it
   // should be marked as no longer resizeable.
   void DisableDynamicSize() {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     dynamic_size_ = false;
   }
 
   bool HasDynamicSize() {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return dynamic_size_;
   }
 
   bool GradientsAllowed() {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return !gradients_disallowed_;
   }
 
@@ -327,7 +327,7 @@ class TensorArray : public ResourceBase {
 
   // Clear the TensorArray, including any Tensor references, and mark as closed.
   void ClearAndMarkClosed() {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     tensors_.clear();
     closed_ = true;
   }

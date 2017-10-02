@@ -69,13 +69,13 @@ class ComputationBuilder {
   // instructions generated via this Computation Builder will have the same
   // OpMetadata attached until a call to ClearOpMetdata.
   void SetOpMetadata(const OpMetadata& metadata) {
-    tensorflow::mutex_lock lock(mutex_);
+    tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
     metadata_ = metadata;
   }
 
   // Clears the HloMetdata state.
   void ClearOpMetadata() {
-    tensorflow::mutex_lock lock(mutex_);
+    tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
     metadata_.Clear();
   }
 

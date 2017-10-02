@@ -32,7 +32,7 @@ const TensorSliceReader* TensorSliceReaderCacheWrapper::GetReader(
     const string& filepattern,
     TensorSliceReader::OpenTableFunction open_function,
     int preferred_shard) const {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   if (!cache_) {
     cache_ = new TensorSliceReaderCache;
   }
@@ -50,7 +50,7 @@ TensorSliceReaderCache::~TensorSliceReaderCache() {
 const TensorSliceReader* TensorSliceReaderCache::GetReader(
     const string& filepattern,
     TensorSliceReader::OpenTableFunction open_function, int preferred_shard) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
 
 #if defined(__GXX_RTTI) ||  defined(_CPPRTTI)
   // Get the function pointer from the open_function value.
@@ -85,7 +85,7 @@ const TensorSliceReader* TensorSliceReaderCache::GetReader(
     TensorSliceReader* tmp_reader(
         new TensorSliceReader(filepattern, open_function, preferred_shard));
     // Acquire the lock again.
-    mu_.lock();
+    mu_.lock(__PRETTY_FUNCTION__);
     if (tmp_reader->status().ok()) {
       reader = tmp_reader;
       readers_[filepattern] = std::make_pair(*func_ptr, reader);

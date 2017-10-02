@@ -38,18 +38,18 @@ class TEST_EventMgrHelper {
   }
 
   int queue_size() {
-    mutex_lock l(em_->mu_);
+    mutex_lock l(em_->mu_, __PRETTY_FUNCTION__);
     return em_->used_events_.size();
   }
 
   int free_size() {
-    mutex_lock l(em_->mu_);
+    mutex_lock l(em_->mu_, __PRETTY_FUNCTION__);
     return em_->free_events_.size();
   }
 
   void QueueTensors(perftools::gputools::Stream* stream,
                     TensorReferenceVector* tensors) {
-    mutex_lock l(em_->mu_);
+    mutex_lock l(em_->mu_, __PRETTY_FUNCTION__);
     em_->QueueTensors(stream, tensors);
   }
 
@@ -60,7 +60,7 @@ class TEST_EventMgrHelper {
       // events and execute the corresponding memory frees.
       EventMgr::ToFreeVector to_free;
       {
-        mutex_lock l(em_->mu_);
+        mutex_lock l(em_->mu_, __PRETTY_FUNCTION__);
         em_->PollEvents(is_dedicated_poller, &to_free);
       }
       em_->FreeMemory(to_free);

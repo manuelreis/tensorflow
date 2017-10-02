@@ -266,7 +266,7 @@ bool CUDAExecutor::GetKernel(const MultiKernelLoaderSpec &spec,
       return false;
     }
 
-    mutex_lock lock{in_memory_modules_mu_};
+    mutex_lock lock{in_memory_modules_mu_, __PRETTY_FUNCTION__};
     module = in_memory_modules_[orig_ptx];
 
     if (module == nullptr) {
@@ -288,7 +288,7 @@ bool CUDAExecutor::GetKernel(const MultiKernelLoaderSpec &spec,
   } else if (spec.has_cuda_cubin_in_memory()) {
     kernelname = &spec.cuda_cubin_in_memory().kernelname();
     const char *cubin = spec.cuda_cubin_in_memory().bytes();
-    mutex_lock lock{in_memory_modules_mu_};
+    mutex_lock lock{in_memory_modules_mu_, __PRETTY_FUNCTION__};
     module = in_memory_modules_[cubin];
 
     if (module == nullptr) {
@@ -356,7 +356,7 @@ bool CUDAExecutor::Launch(Stream *stream, const ThreadDim &thread_dims,
   // whether we've done an occupancy check on this kernel before isn't free
   // (because we have to synchronize), so we only do this at -v 2+.
   if (VLOG_IS_ON(2)) {
-    mutex_lock lock(launched_kernels_mu_);
+    mutex_lock lock(launched_kernels_mu_, __PRETTY_FUNCTION__);
     if (!launched_kernels_.count(cufunc)) {
       VlogOccupancyInfo(kernel, thread_dims, block_dims);
       // TODO(rspringer): Remove elements from launched_kernels_...if we ever
@@ -784,7 +784,7 @@ bool CUDAExecutor::DeviceMemoryUsage(int64 *free, int64 *total) const {
 bool CUDAExecutor::GetSymbol(const string& symbol_name, void **mem,
                              size_t *bytes) {
   {  // give limited scope to mutex_lock
-    mutex_lock lock{disk_modules_mu_};
+    mutex_lock lock{disk_modules_mu_, __PRETTY_FUNCTION__};
     for (auto &it : disk_modules_) {
       if (CUDADriver::GetModuleSymbol(context_, it.second, symbol_name.c_str(),
                                       reinterpret_cast<CUdeviceptr *>(mem),
@@ -795,7 +795,7 @@ bool CUDAExecutor::GetSymbol(const string& symbol_name, void **mem,
   }
 
   {  // give limited scope to mutex_lock
-    mutex_lock lock{in_memory_modules_mu_};
+    mutex_lock lock{in_memory_modules_mu_, __PRETTY_FUNCTION__};
     for (auto &it : in_memory_modules_) {
       if (CUDADriver::GetModuleSymbol(context_, it.second, symbol_name.c_str(),
                                       reinterpret_cast<CUdeviceptr *>(mem),

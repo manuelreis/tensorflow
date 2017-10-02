@@ -56,7 +56,7 @@ class AssignOp : public OpKernel {
     attr.set_nic_compatible(true);
 
     {
-      mutex_lock l(*context->input_ref_mutex(0));
+      mutex_lock l(*context->input_ref_mutex(0), __PRETTY_FUNCTION__);
       const Tensor& old_lhs = context->mutable_input(0, /* lock_held */ true);
       const bool same_shape = old_lhs.shape().IsSameSize(rhs.shape());
       if (validate_shape_) {

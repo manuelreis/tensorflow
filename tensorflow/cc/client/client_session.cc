@@ -90,7 +90,7 @@ Status ClientSession::Run(const FeedType& inputs,
 }
 
 Status ClientSession::Impl::MaybeExtendGraph() const {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   int num_nodes = graph_->num_node_ids();
   if (num_nodes > last_num_graph_nodes_) {
     GraphDef graph_def;

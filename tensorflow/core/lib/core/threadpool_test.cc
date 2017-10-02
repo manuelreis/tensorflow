@@ -131,13 +131,13 @@ static void BM_Sequential(int iters) {
     if (count--) {
       pool.Schedule(work);
     } else {
-      mutex_lock l(done_lock);
+      mutex_lock l(done_lock, __PRETTY_FUNCTION__);
       done_flag = true;
       done.notify_all();
     }
   };
   work();
-  mutex_lock l(done_lock);
+  mutex_lock l(done_lock, __PRETTY_FUNCTION__);
   if (!done_flag) {
     done.wait(l);
   }
@@ -154,13 +154,13 @@ static void BM_Parallel(int iters) {
   for (int i = 0; i < iters; ++i) {
     pool.Schedule([&count, &done_lock, &done, &done_flag]() {
       if (count.fetch_sub(1) == 1) {
-        mutex_lock l(done_lock);
+        mutex_lock l(done_lock, __PRETTY_FUNCTION__);
         done_flag = true;
         done.notify_all();
       }
     });
   }
-  mutex_lock l(done_lock);
+  mutex_lock l(done_lock, __PRETTY_FUNCTION__);
   if (!done_flag) {
     done.wait(l);
   }

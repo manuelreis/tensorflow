@@ -53,7 +53,7 @@ class ReadVariableOp : public OpKernel {
     // TODO(apassos): It's possible to do copy-on-write here instead of always
     // copying by coordinating with the writing code. Do this. This will also
     // obviate the need to hold a lock here.
-    mutex_lock ml(*variable->mu());
+    mutex_lock ml(*variable->mu(), __PRETTY_FUNCTION__);
     Tensor* out = nullptr;
     OP_REQUIRES_OK(ctx,
                    ctx->allocate_output(0, variable->tensor()->shape(), &out));
@@ -181,7 +181,7 @@ class AssignVariableOp : public OpKernel {
     // case, yet the refcount is usually 2 instead of 1. Figure out what needs
     // to change in the code to make this not be the case, so we can safely take
     // ownership.
-    mutex_lock ml(*variable->mu());
+    mutex_lock ml(*variable->mu(), __PRETTY_FUNCTION__);
     const Tensor& value = context->input(1);
     // TODO(apassos): should check that the declared shapes are compatible
     // somewhere, probably.
@@ -250,7 +250,7 @@ class AssignUpdateVariableOp : public OpKernel {
     // case, yet the refcount is usually 2 instead of 1. Figure out what needs
     // to change in the code to make this not be the case, so we can safely take
     // ownership.
-    mutex_lock ml(*variable->mu());
+    mutex_lock ml(*variable->mu(), __PRETTY_FUNCTION__);
     const Tensor& value = context->input(1);
     functor::DenseUpdate<Device, T, Op> update_functor;
     update_functor(context->eigen_device<Device>(),
@@ -315,7 +315,7 @@ class ResourceGatherOp : public OpKernel {
   void Compute(OpKernelContext* c) override {
     Var* v = nullptr;
     OP_REQUIRES_OK(c, LookupResource(c, HandleFromInput(c, 0), &v));
-    mutex_lock ml(*v->mu());
+    mutex_lock ml(*v->mu(), __PRETTY_FUNCTION__);
     const Tensor& params = *v->tensor();
     const Tensor& indices = c->input(1);
     OP_REQUIRES(
@@ -387,7 +387,7 @@ class ResourceScatterUpdateOp : public OpKernel {
   void Compute(OpKernelContext* c) override {
     Var* v = nullptr;
     OP_REQUIRES_OK(c, LookupResource(c, HandleFromInput(c, 0), &v));
-    mutex_lock ml(*v->mu());
+    mutex_lock ml(*v->mu(), __PRETTY_FUNCTION__);
     Tensor* params = v->tensor();
     const Tensor& indices = c->input(1);
     const Tensor& updates = c->input(2);

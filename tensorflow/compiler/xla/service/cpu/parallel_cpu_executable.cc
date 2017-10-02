@@ -178,7 +178,7 @@ Status ParallelCpuExecutable::ExecuteComputeFunctions(
   // Resolve functions for all the HLO instructions ahead of time.
   std::map<HloInstruction*, ComputeFunctionType> functions;
   for (auto& entry : *functions_names_) {
-    tensorflow::mutex_lock lock(jit_mutex_);
+    tensorflow::mutex_lock lock(jit_mutex_, __PRETTY_FUNCTION__);
     HloInstruction* instruction = entry.first;
     llvm::JITSymbol sym = jit_->FindSymbol(entry.second);
     TF_RET_CHECK(sym);
@@ -262,7 +262,7 @@ Status ParallelCpuExecutable::ExecuteComputeFunctions(
         // will pop it off and potentially launch more work which uses the
         // result.
         {
-          tensorflow::mutex_lock l(completion_queue_lock);
+          tensorflow::mutex_lock l(completion_queue_lock, __PRETTY_FUNCTION__);
           completion_queue.push_back(instruction);
           completion_queue_cv.notify_all();
         }
@@ -275,7 +275,7 @@ Status ParallelCpuExecutable::ExecuteComputeFunctions(
     // pop it out of the queue and make the result available to its users.
     HloInstruction* instruction;
     do {
-      tensorflow::mutex_lock l(completion_queue_lock);
+      tensorflow::mutex_lock l(completion_queue_lock, __PRETTY_FUNCTION__);
       if (completion_queue.empty()) {
         completion_queue_cv.wait(l);
       }
@@ -296,7 +296,7 @@ Status ParallelCpuExecutable::ExecuteComputeFunctions(
   uint64 end_micros = tensorflow::Env::Default()->NowMicros();
 
   {
-    tensorflow::mutex_lock lock(mutex_);
+    tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
     double nanoseconds = (end_micros - start_micros) * 1000.0;
     execution_profile_.set_compute_time_ns(std::max(nanoseconds, 1.0));
     // The last profile counter is used for the computation as a whole.

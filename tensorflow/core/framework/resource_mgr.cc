@@ -65,7 +65,7 @@ ResourceMgr::ResourceMgr(const string& default_container)
 ResourceMgr::~ResourceMgr() { Clear(); }
 
 void ResourceMgr::Clear() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   for (const auto& p : containers_) {
     for (const auto& q : *p.second) {
       q.second->Unref();
@@ -76,7 +76,7 @@ void ResourceMgr::Clear() {
 }
 
 string ResourceMgr::DebugString() const {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   struct Line {
     const string* container;
     const string type;
@@ -108,7 +108,7 @@ string ResourceMgr::DebugString() const {
 Status ResourceMgr::DoCreate(const string& container, TypeIndex type,
                              const string& name, ResourceBase* resource) {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     Container** b = &containers_[container];
     if (*b == nullptr) {
       *b = new Container;
@@ -126,7 +126,7 @@ Status ResourceMgr::DoCreate(const string& container, TypeIndex type,
 Status ResourceMgr::DoLookup(const string& container, TypeIndex type,
                              const string& name,
                              ResourceBase** resource) const {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   const Container* b = gtl::FindPtrOrNull(containers_, container);
   if (b == nullptr) {
     return errors::NotFound("Container ", container, " does not exist.");
@@ -146,7 +146,7 @@ Status ResourceMgr::DoDelete(const string& container, uint64 type_hash_code,
                              const string& type_name) {
   ResourceBase* base = nullptr;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     Container* b = gtl::FindPtrOrNull(containers_, container);
     if (b == nullptr) {
       return errors::NotFound("Container ", container, " does not exist.");
@@ -177,7 +177,7 @@ Status ResourceMgr::Delete(const ResourceHandle& handle) {
 Status ResourceMgr::Cleanup(const string& container) {
   Container* b = nullptr;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     auto iter = containers_.find(container);
     if (iter == containers_.end()) {
       // Nothing to cleanup, it's OK.

@@ -212,7 +212,7 @@ string CallStr(const char *function_name, Stream *stream,
 //
 // Note here that most of the parameter names are not short and that
 // most of the functions take many more than 2 parameters.
-#define VLOG_CALL(...) VLOG(1) << CallStr(__func__, this, {__VA_ARGS__})
+#define VLOG_CALL(...) VLOG(1) << CallStr(__PRETTY_FUNCTION__, this, {__VA_ARGS__})
 
 }  // namespace
 
@@ -248,7 +248,7 @@ Stream::~Stream() {
 Stream &Stream::Init() {
   VLOG_CALL();
 
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
   CHECK_EQ(false, allocated_)
       << "stream appears to already have been initialized";
   CHECK(!ok_) << "stream should be in !ok() state pre-initialization";
@@ -1491,7 +1491,7 @@ Stream &Stream::ThenCopyDevice2HostBuffer(
 }
 
 Stream *Stream::GetOrCreateSubStream() {
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
   for (auto &stream : sub_streams_) {
     if (stream.second) {
       stream.second = false;
@@ -1508,7 +1508,7 @@ Stream *Stream::GetOrCreateSubStream() {
 }
 
 void Stream::ReturnSubStream(Stream *sub_stream) {
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
   for (auto &stream : sub_streams_) {
     if (stream.first.get() == sub_stream) {
       stream.second = true;
@@ -4397,7 +4397,7 @@ bool Stream::BlockHostUntilDone() {
 
   {
     // Wait until all active sub-streams have done their tasks.
-    mutex_lock lock{mu_};
+    mutex_lock lock{mu_, __PRETTY_FUNCTION__};
     for (auto &stream : sub_streams_) {
       if (!stream.second) {
         CheckError(stream.first->BlockHostUntilDone());

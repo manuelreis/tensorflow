@@ -38,14 +38,14 @@ void GuardedPhiloxRandom::Init(int64 seed, int64 seed2) {
     seed = random::New64();
     seed2 = random::New64();
   }
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   generator_ = random::PhiloxRandom(seed, seed2);
   initialized_ = true;
 }
 
 random::PhiloxRandom GuardedPhiloxRandom::ReserveSamples128(int64 samples) {
   CHECK(initialized_);
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   auto local = generator_;
   generator_.Skip(samples);
   return local;

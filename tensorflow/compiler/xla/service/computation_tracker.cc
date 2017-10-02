@@ -37,7 +37,7 @@ ComputationTracker::ComputationTracker() : next_computation_(1) {}
 
 ComputationHandle ComputationTracker::NewComputation(
     const string& computation_name) {
-  tensorflow::mutex_lock lock(computation_mutex_);
+  tensorflow::mutex_lock lock(computation_mutex_, __PRETTY_FUNCTION__);
   ComputationHandle computation_handle;
   int64 handle_value = next_computation_++;
   computation_handle.set_handle(handle_value);
@@ -48,7 +48,7 @@ ComputationHandle ComputationTracker::NewComputation(
 
 StatusOr<ComputationHandle> ComputationTracker::LoadSessionModule(
     const SessionModule& session_module) {
-  tensorflow::mutex_lock lock(computation_mutex_);
+  tensorflow::mutex_lock lock(computation_mutex_, __PRETTY_FUNCTION__);
 
   // For each embedded computation, create a new computation based on its
   // serialized data, and place the mapping from the old computation handle to
@@ -94,7 +94,7 @@ ComputationTracker::SnapshotComputation(const ComputationHandle& computation) {
   std::set<VersionedComputationHandle> visited;
   std::list<VersionedComputationHandle> post_order;
   {
-    tensorflow::mutex_lock lock(computation_mutex_);
+    tensorflow::mutex_lock lock(computation_mutex_, __PRETTY_FUNCTION__);
     ComputeComputationPostOrder(entry_versioned_handle, &visited, &post_order);
   }
   auto session_module = MakeUnique<SessionModule>();
@@ -111,7 +111,7 @@ ComputationTracker::SnapshotComputation(const ComputationHandle& computation) {
 
 StatusOr<UserComputation*> ComputationTracker::Resolve(
     const ComputationHandle& computation) const {
-  tensorflow::mutex_lock lock(computation_mutex_);
+  tensorflow::mutex_lock lock(computation_mutex_, __PRETTY_FUNCTION__);
   return ResolveInternal(computation);
 }
 
@@ -170,7 +170,7 @@ void ComputationTracker::ComputeComputationPostOrder(
 StatusOr<std::unique_ptr<HloModule>> ComputationTracker::BuildHloModule(
     const VersionedComputationHandle& entry_handle,
     bool include_unreachable_instructions) const {
-  tensorflow::mutex_lock lock(computation_mutex_);
+  tensorflow::mutex_lock lock(computation_mutex_, __PRETTY_FUNCTION__);
 
   VLOG(1) << "BuildHloModule(" << entry_handle
           << ", include_unreachable_instructions="
@@ -234,7 +234,7 @@ StatusOr<std::unique_ptr<HloModule>> ComputationTracker::BuildHloModule(
 }
 
 string ComputationTracker::ToString() const {
-  tensorflow::mutex_lock lock(computation_mutex_);
+  tensorflow::mutex_lock lock(computation_mutex_, __PRETTY_FUNCTION__);
   return ToStringInternal();
 }
 

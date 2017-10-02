@@ -236,7 +236,7 @@ class ScatterNdUpdateOp : public OpKernel {
   void Compute(OpKernelContext* c) override {
     if (use_exclusive_lock_) {
       // Hold mutex while we apply updates
-      mutex_lock l(*c->input_ref_mutex(0));
+      mutex_lock l(*c->input_ref_mutex(0), __PRETTY_FUNCTION__);
       DoCompute(c);
     } else {
       DoCompute(c);

@@ -225,7 +225,7 @@ class DirectSession : public Session {
                            int64 timeout_in_ms);
 
   ::tensorflow::Status CheckNotClosed() {
-    mutex_lock l(closed_lock_);
+    mutex_lock l(closed_lock_, __PRETTY_FUNCTION__);
     if (closed_) return errors::Cancelled("Session has been closed.");
     return ::tensorflow::Status::OK();
   }

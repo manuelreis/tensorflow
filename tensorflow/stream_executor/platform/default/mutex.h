@@ -18,8 +18,9 @@ limitations under the License.
 
 #include <chrono>              // NOLINT
 #include <condition_variable>  // NOLINT
-
 #include "tensorflow/stream_executor/platform/port.h"
+//(dleoni) Include the following library in order to print the name of the function using mutexes
+#include <iostream>
 
 // std::shared_timed_mutex is a C++14 feature.
 #if (__cplusplus >= 201402L)
@@ -54,14 +55,18 @@ class LOCKABLE mutex : public BaseMutex {
   // The default implementation of std::mutex is safe to use after the linker
   // initializations
   explicit mutex(LinkerInitialized x) {}
-
-  void lock() ACQUIRE() { BaseMutex::lock(); }
+  
+  //(dleoni) Debug trick: print the name of the function that is using a mutex
+  //void lock() ACQUIRE() { BaseMutex::lock(); }
+  void lock(const char *caller_name) ACQUIRE() { std::cout << "CALLER:" << caller_name << std::endl; BaseMutex::lock(); }
   void unlock() RELEASE() { BaseMutex::unlock(); }
 };
 
 class SCOPED_LOCKABLE mutex_lock : public std::unique_lock<BaseMutex> {
  public:
-  mutex_lock(class mutex& m) ACQUIRE(m) : std::unique_lock<BaseMutex>(m) {}
+  //(dleoni) Debug trick: print the name of the function that is using a mutexi
+  //mutex_lock(class mutex& m) ACQUIRE(m) : std::unique_lock<BaseMutex>(m) {}
+  mutex_lock(class mutex& m, const char *caller_name) ACQUIRE(m) : std::unique_lock<BaseMutex>(m) { std::cout << "CALLER:" << caller_name << std::endl;}
   ~mutex_lock() RELEASE() {}
 };
 

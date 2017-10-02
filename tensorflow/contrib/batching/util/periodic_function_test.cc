@@ -117,7 +117,7 @@ TEST(PeriodicFunctionTest, StartupDelayRace) {
   options.startup_delay_micros = kDelayMicros;
   PeriodicFunction periodic_function(
       [&mu, &counter, &listener]() {
-        mutex_lock l(mu);
+        mutex_lock l(mu, __PRETTY_FUNCTION__);
         counter++;
         listener->Notify();
       },
@@ -127,7 +127,7 @@ TEST(PeriodicFunctionTest, StartupDelayRace) {
   fake_clock_env.AdvanceByMicroseconds(kDelayMicros);
   listener->WaitForNotification();
   {
-    mutex_lock l(mu);
+    mutex_lock l(mu, __PRETTY_FUNCTION__);
     EXPECT_EQ(1, counter);
     // A notification can only be notified once.
     listener.reset(new Notification);
@@ -136,7 +136,7 @@ TEST(PeriodicFunctionTest, StartupDelayRace) {
   fake_clock_env.AdvanceByMicroseconds(kPeriodMicros);
   listener->WaitForNotification();
   {
-    mutex_lock l(mu);
+    mutex_lock l(mu, __PRETTY_FUNCTION__);
     EXPECT_EQ(2, counter);
   }
   StopPeriodicFunction(&periodic_function, &fake_clock_env, kPeriodMicros);
@@ -157,7 +157,7 @@ class PeriodicFunctionWithFakeClockEnvTest : public ::testing::Test {
         counter_(0),
         pf_(
             [this]() {
-              mutex_lock l(counter_mu_);
+              mutex_lock l(counter_mu_, __PRETTY_FUNCTION__);
               ++counter_;
             },
             kPeriodMicros, GetPeriodicFunctionOptions()) {}
@@ -185,7 +185,7 @@ class PeriodicFunctionWithFakeClockEnvTest : public ::testing::Test {
   bool AwaitCount(int expected_counter) {
     fake_clock_env_.BlockUntilThreadsAsleep(1);
     {
-      mutex_lock lock(counter_mu_);
+      mutex_lock lock(counter_mu_, __PRETTY_FUNCTION__);
       return counter_ == expected_counter;
     }
   }

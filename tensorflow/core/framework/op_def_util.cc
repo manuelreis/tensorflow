@@ -325,7 +325,7 @@ Status CheckOpDeprecation(const OpDef& op_def, int graph_def_version) {
       static std::unordered_set<string> warned;
       bool warn;
       {
-        mutex_lock lock(mu);
+        mutex_lock lock(mu, __PRETTY_FUNCTION__);
         warn = warned.insert(op_def.name()).second;
       }
       if (warn) {

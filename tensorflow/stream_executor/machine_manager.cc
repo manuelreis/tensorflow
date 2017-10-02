@@ -265,12 +265,12 @@ MachineManager::CreateSingletonInternal(PlatformKind platform,
 /* static */ port::StatusOr<MachineManager *> MachineManager::CreateSingleton(
     PlatformKind platform, DeviceOptions device_options,
     const PluginConfig &config) {
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
   return CreateSingletonInternal(platform, device_options, config);
 }
 
 /* static */ MachineManager *MachineManager::singleton() {
-  mutex_lock lock{mu_};
+  mutex_lock lock{mu_, __PRETTY_FUNCTION__};
   if (singleton_ == nullptr) {
     PlatformKind platform = DetectPreferredPlatform();
     DeviceOptions options = DeviceOptions::Default();

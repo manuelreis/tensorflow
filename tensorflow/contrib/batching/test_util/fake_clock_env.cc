@@ -25,7 +25,7 @@ FakeClockEnv::FakeClockEnv(Env* wrapped) : EnvWrapper(wrapped) {}
 
 void FakeClockEnv::AdvanceByMicroseconds(int micros) {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     current_time_ += micros;
     for (auto it = sleeping_threads_.begin(); it != sleeping_threads_.end();) {
       if (current_time_ >= it->wake_time) {
@@ -41,7 +41,7 @@ void FakeClockEnv::AdvanceByMicroseconds(int micros) {
 void FakeClockEnv::BlockUntilSleepingThread(uint64 wake_time) {
   for (;;) {
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       for (auto it = sleeping_threads_.begin(); it != sleeping_threads_.end();
            ++it) {
         if (it->wake_time == wake_time) {
@@ -56,7 +56,7 @@ void FakeClockEnv::BlockUntilSleepingThread(uint64 wake_time) {
 void FakeClockEnv::BlockUntilThreadsAsleep(int num_threads) {
   for (;;) {
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       if (num_threads <= sleeping_threads_.size()) {
         return;
       }
@@ -67,7 +67,7 @@ void FakeClockEnv::BlockUntilThreadsAsleep(int num_threads) {
 
 uint64 FakeClockEnv::NowMicros() {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return current_time_;
   }
 }
@@ -79,7 +79,7 @@ void FakeClockEnv::SleepForMicroseconds(int64 micros) {
 
   Notification wake_notification;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     sleeping_threads_.push_back({current_time_ + micros, &wake_notification});
   }
   wake_notification.WaitForNotification();

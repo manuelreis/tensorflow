@@ -37,7 +37,7 @@ class FakeAllocator {
   void* AllocateRaw(size_t alignment, size_t num_bytes) {
     return retry_.AllocateRaw(
         [this](size_t a, size_t nb, bool v) {
-          mutex_lock l(mu_);
+          mutex_lock l(mu_, __PRETTY_FUNCTION__);
           if (memory_capacity_ > 0) {
             --memory_capacity_;
             return good_ptr_;
@@ -49,7 +49,7 @@ class FakeAllocator {
   }
 
   void DeallocateRaw(void* ptr) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     ++memory_capacity_;
     retry_.NotifyDealloc();
   }
@@ -77,7 +77,7 @@ class AlternatingBarrier {
       : num_users_(num_users), next_turn_(0), done_(num_users, false) {}
 
   void WaitTurn(int user_index) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     int wait_cycles = 0;
     // A user is allowed to proceed out of turn if it waits too long.
     while (next_turn_ != user_index && wait_cycles++ < 10) {
@@ -91,7 +91,7 @@ class AlternatingBarrier {
 
   // When a user quits, stop reserving it a turn.
   void Done(int user_index) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     done_[user_index] = true;
     if (next_turn_ == user_index) {
       IncrementTurn();
@@ -132,7 +132,7 @@ class GPUAllocatorRetryTest : public ::testing::Test {
                 barrier_->WaitTurn(i);
                 ptr = alloc_->AllocateRaw(16, 1);
                 if (ptr == nullptr) {
-                  mutex_lock l(mu_);
+                  mutex_lock l(mu_, __PRETTY_FUNCTION__);
                   has_failed_ = true;
                   barrier_->Done(i);
                   return;
@@ -154,7 +154,7 @@ class GPUAllocatorRetryTest : public ::testing::Test {
   void JoinConsumerThreads(bool expected, int wait_micros) {
     while (wait_micros > 0) {
       {
-        mutex_lock l(mu_);
+        mutex_lock l(mu_, __PRETTY_FUNCTION__);
         if (has_failed_ == expected) break;
       }
       int interval_micros = std::min(1000, wait_micros);
@@ -193,7 +193,7 @@ TEST_F(GPUAllocatorRetryTest, RetrySuccess) {
     LOG(INFO) << "Consumer " << i << " is " << consumer_count_[i];
   }
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     EXPECT_FALSE(has_failed_);
   }
   EXPECT_GT(consumer_count_[0], 0);
@@ -219,7 +219,7 @@ TEST_F(GPUAllocatorRetryTest, NoRetryFail) {
     LOG(INFO) << "Consumer " << i << " is " << consumer_count_[i];
   }
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     EXPECT_TRUE(has_failed_);
   }
 }
@@ -242,7 +242,7 @@ TEST_F(GPUAllocatorRetryTest, RetryInsufficientFail) {
     LOG(INFO) << "Consumer " << i << " is " << consumer_count_[i];
   }
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     EXPECT_TRUE(has_failed_);
   }
 }

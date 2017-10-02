@@ -108,7 +108,7 @@ static mutex& GetRpathMutex() {
 }
 
 /* static */ void DsoLoader::RegisterRpath(port::StringPiece path) {
-  mutex_lock lock{GetRpathMutex()};
+  mutex_lock lock{GetRpathMutex(), __PRETTY_FUNCTION__};
   GetRpaths()->push_back(path.ToString());
 }
 
@@ -190,7 +190,7 @@ static std::vector<string>* CreatePrimordialRpaths() {
   // Otherwise, try binary-plus-rpath locations.
   string binary_directory =
       GetBinaryDirectory(true /* = strip_executable_name */);
-  mutex_lock lock{GetRpathMutex()};
+  mutex_lock lock{GetRpathMutex(), __PRETTY_FUNCTION__};
   for (const string& rpath : *GetRpaths()) {
     candidate =
         port::Join(StringPieces{binary_directory, rpath, library_name}, "/");

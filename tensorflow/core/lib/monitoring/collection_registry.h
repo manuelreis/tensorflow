@@ -247,7 +247,7 @@ class Collector {
       const uint64 registration_time_millis,
       internal::Collector* const collector) LOCKS_EXCLUDED(mu_) {
     auto* const point_set = [&]() {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       return collected_metrics_->point_set_map
           .insert(std::make_pair(metric_def->name().ToString(),
                                  std::unique_ptr<PointSet>(new PointSet())))

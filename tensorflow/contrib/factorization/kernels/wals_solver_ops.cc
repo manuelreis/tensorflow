@@ -195,17 +195,17 @@ class WALSComputePartialLhsAndRhsOp : public OpKernel {
       // map using the hash of the thread id as the key.
       //
       // TODO(jpoulson): Switch to try_emplace once C++17 is supported
-      map_mutex.lock();
+      map_mutex.lock(__PRETTY_FUNCTION__);
       const auto key_count = factor_batch_map.count(id_hash);
       map_mutex.unlock();
       if (!key_count) {
-        map_mutex.lock();
+        map_mutex.lock(__PRETTY_FUNCTION__);
         factor_batch_map.emplace(
             std::piecewise_construct, std::forward_as_tuple(id_hash),
             std::forward_as_tuple(factors_mat.rows(), kMaxBatchSize));
         map_mutex.unlock();
       }
-      map_mutex.lock();
+      map_mutex.lock(__PRETTY_FUNCTION__);
       auto& factor_batch = factor_batch_map[id_hash];
       map_mutex.unlock();
 

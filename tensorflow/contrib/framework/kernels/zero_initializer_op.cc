@@ -38,7 +38,7 @@ class ZeroInitializerOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* ctx) override {
-    mutex_lock l(*ctx->input_ref_mutex(0));
+    mutex_lock l(*ctx->input_ref_mutex(0), __PRETTY_FUNCTION__);
     Tensor input = ctx->mutable_input(0, true);
     OP_REQUIRES(ctx, !input.IsInitialized(),
                 errors::InvalidArgument("input is already initialized"));

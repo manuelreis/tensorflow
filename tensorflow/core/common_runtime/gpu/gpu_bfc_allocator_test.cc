@@ -302,7 +302,7 @@ static void BM_AllocationThreaded(int iters, int num_threads) {
         void* p = a.AllocateRaw(1, bytes);
         a.DeallocateRaw(p);
         if (count.fetch_sub(1) == 1) {
-          mutex_lock l(done_lock);
+          mutex_lock l(done_lock, __PRETTY_FUNCTION__);
           done_flag = true;
           done.notify_all();
           break;
@@ -310,7 +310,7 @@ static void BM_AllocationThreaded(int iters, int num_threads) {
       }
     });
   }
-  mutex_lock l(done_lock);
+  mutex_lock l(done_lock, __PRETTY_FUNCTION__);
   if (!done_flag) {
     done.wait(l);
   }

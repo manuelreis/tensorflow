@@ -41,7 +41,7 @@ Status IntraProcessRendezvous::Send(const ParsedKey& parsed,
                                     const Tensor& val, const bool is_dead) {
   VLOG(1) << "IntraProcessRendezvous Send " << this << " " << parsed.FullKey();
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (!status_.ok()) return status_;
   }
 
@@ -52,7 +52,7 @@ Status IntraProcessRendezvous::Send(const ParsedKey& parsed,
 Status IntraProcessRendezvous::ParseKey(const string& key, bool is_src,
                                         Rendezvous::ParsedKey* parsed) {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (!status_.ok()) return status_;
   }
   TF_RETURN_IF_ERROR(Rendezvous::ParseKey(key, parsed));

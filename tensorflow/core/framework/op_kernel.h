@@ -907,7 +907,7 @@ class OpKernelContext {
   }
 
   gtl::InlinedVector<WrappedAllocator, 4> wrapped_allocators() const {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     gtl::InlinedVector<WrappedAllocator, 4> retrieved = wrapped_allocators_;
     return retrieved;
   }
@@ -1299,7 +1299,7 @@ inline void OpKernelContext::record_tensor_reference(const Tensor& tensor) {
 inline void OpKernelContext::retrieve_accessed_tensors(
     TensorReferenceVector* out_vector) {
   if (params_->record_tensor_accesses) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     referenced_tensors_->FreezeAndReturnReferences(out_vector);
   }
 }

@@ -39,7 +39,7 @@ Status InitializableLookupTable::Initialize(InitTableIterator& iter) {
   TF_RETURN_IF_ERROR(
       CheckKeyAndValueTensorsForInsert(iter.keys(), iter.values()));
 
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   if (is_initialized()) {
     return errors::FailedPrecondition("Table already initialized.");
   }

@@ -27,7 +27,7 @@ namespace xla {
 std::shared_ptr<Executable> CompilationCache::Insert(
     std::unique_ptr<Executable> executable,
     const HloModuleConfig& module_config) {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   CacheKey key =
       BuildKey(executable->entry_computation_handle(), module_config);
@@ -50,7 +50,7 @@ std::shared_ptr<Executable> CompilationCache::Insert(
 std::shared_ptr<Executable> CompilationCache::LookUp(
     const VersionedComputationHandle& versioned_handle,
     const HloModuleConfig& module_config) const {
-  tensorflow::mutex_lock lock(mutex_);
+  tensorflow::mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
 
   CacheKey key = BuildKey(versioned_handle, module_config);
   VLOG(2) << "looking up cache key: " << key;

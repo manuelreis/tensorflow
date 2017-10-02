@@ -40,7 +40,7 @@ GlobalDataHandle AllocationTracker::Register(Backend* backend,
                                              se::DeviceMemoryBase device_memory,
                                              const Shape& shape,
                                              const string& tag) {
-  tensorflow::mutex_lock lock(allocation_mutex_);
+  tensorflow::mutex_lock lock(allocation_mutex_, __PRETTY_FUNCTION__);
   VLOG(2) << "Register";
   return RegisterInternal(backend, device_ordinal, device_memory, shape, tag,
                           /*initial_ref_count=*/1);
@@ -84,7 +84,7 @@ GlobalDataHandle AllocationTracker::RegisterInternal(
 }
 
 tensorflow::Status AllocationTracker::Unregister(const GlobalDataHandle& data) {
-  tensorflow::mutex_lock lock(allocation_mutex_);
+  tensorflow::mutex_lock lock(allocation_mutex_, __PRETTY_FUNCTION__);
   TF_ASSIGN_OR_RETURN(Allocation * allocation, ResolveInternal(data));
   std::set<void*> deallocated_buffers;
   TF_RETURN_IF_ERROR(
@@ -151,7 +151,7 @@ tensorflow::Status AllocationTracker::DeallocateShape(
 
 StatusOr<std::vector<GlobalDataHandle>> AllocationTracker::DeconstructTuple(
     const GlobalDataHandle& data) {
-  tensorflow::mutex_lock lock(allocation_mutex_);
+  tensorflow::mutex_lock lock(allocation_mutex_, __PRETTY_FUNCTION__);
   TF_ASSIGN_OR_RETURN(Allocation * allocation, ResolveInternal(data));
 
   if (!ShapeUtil::IsTuple(allocation->shape())) {
@@ -184,7 +184,7 @@ StatusOr<std::vector<GlobalDataHandle>> AllocationTracker::DeconstructTuple(
 
 StatusOr<const Allocation*> AllocationTracker::Resolve(
     const GlobalDataHandle& data) {
-  tensorflow::mutex_lock lock(allocation_mutex_);
+  tensorflow::mutex_lock lock(allocation_mutex_, __PRETTY_FUNCTION__);
   return AllocationTracker::ResolveInternal(data);
 }
 

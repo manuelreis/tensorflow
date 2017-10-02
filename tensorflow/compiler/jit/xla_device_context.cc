@@ -150,7 +150,7 @@ void XlaTransferManager::CopyDeviceTensorToCPU(const Tensor* device_tensor,
 std::shared_ptr<xla::GlobalData> XlaTransferManager::GetTensorGlobalData(
     const Tensor& tensor) {
   const XlaGlobalData* data = CastTensorToXlaGlobalData(tensor);
-  mutex_lock lock(data->mu);
+  mutex_lock lock(data->mu, __PRETTY_FUNCTION__);
   CHECK(data->data);
   return data->data;
 }
@@ -158,7 +158,7 @@ std::shared_ptr<xla::GlobalData> XlaTransferManager::GetTensorGlobalData(
 void XlaTransferManager::SetTensorGlobalData(
     std::shared_ptr<xla::GlobalData> global_data, Tensor* tensor) {
   XlaGlobalData* data = CastTensorToXlaGlobalData(tensor);
-  mutex_lock lock(data->mu);
+  mutex_lock lock(data->mu, __PRETTY_FUNCTION__);
   data->data = std::move(global_data);
 }
 

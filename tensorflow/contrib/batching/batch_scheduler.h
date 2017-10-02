@@ -192,7 +192,7 @@ template <typename TaskType>
 void Batch<TaskType>::AddTask(std::unique_ptr<TaskType> task) {
   DCHECK(!IsClosed());
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     size_ += task->size();
     tasks_.push_back(std::move(task));
   }
@@ -201,7 +201,7 @@ void Batch<TaskType>::AddTask(std::unique_ptr<TaskType> task) {
 template <typename TaskType>
 std::unique_ptr<TaskType> Batch<TaskType>::RemoveTask() {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (tasks_.empty()) {
       return nullptr;
     }
@@ -214,7 +214,7 @@ std::unique_ptr<TaskType> Batch<TaskType>::RemoveTask() {
 template <typename TaskType>
 int Batch<TaskType>::num_tasks() const {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return tasks_.size();
   }
 }
@@ -222,7 +222,7 @@ int Batch<TaskType>::num_tasks() const {
 template <typename TaskType>
 bool Batch<TaskType>::empty() const {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return tasks_.empty();
   }
 }
@@ -231,7 +231,7 @@ template <typename TaskType>
 const TaskType& Batch<TaskType>::task(int i) const {
   DCHECK_GE(i, 0);
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     DCHECK_LT(i, tasks_.size());
     return *tasks_[i].get();
   }
@@ -241,7 +241,7 @@ template <typename TaskType>
 TaskType* Batch<TaskType>::mutable_task(int i) {
   DCHECK_GE(i, 0);
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     DCHECK_LT(i, tasks_.size());
     return tasks_[i].get();
   }
@@ -250,7 +250,7 @@ TaskType* Batch<TaskType>::mutable_task(int i) {
 template <typename TaskType>
 size_t Batch<TaskType>::size() const {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return size_;
   }
 }

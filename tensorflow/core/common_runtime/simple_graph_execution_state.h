@@ -157,7 +157,7 @@ class SimpleGraphExecutionState {
   // Returns the map of stateful placements as a map of
   // node name to placement string.
   std::unordered_map<string, string> GetStatefulPlacements() const {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return stateful_placements_;
   }
 

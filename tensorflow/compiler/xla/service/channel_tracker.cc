@@ -32,7 +32,7 @@ namespace xla {
 ChannelTracker::ChannelTracker() : next_channel_(1) {}
 
 ChannelHandle ChannelTracker::NewChannel() {
-  tensorflow::mutex_lock lock(channel_mutex_);
+  tensorflow::mutex_lock lock(channel_mutex_, __PRETTY_FUNCTION__);
 
   // Create a new channel handle with a unique value.
   const ChannelHandle new_handle = AllocateHandle();
@@ -47,12 +47,12 @@ ChannelHandle ChannelTracker::NewChannel() {
 }
 
 Status ChannelTracker::RegisterSend(const ChannelHandle& handle) {
-  tensorflow::mutex_lock lock(channel_mutex_);
+  tensorflow::mutex_lock lock(channel_mutex_, __PRETTY_FUNCTION__);
   return RegisterSendInternal(handle);
 }
 
 Status ChannelTracker::RegisterRecv(const ChannelHandle& handle) {
-  tensorflow::mutex_lock lock(channel_mutex_);
+  tensorflow::mutex_lock lock(channel_mutex_, __PRETTY_FUNCTION__);
   return RegisterRecvInternal(handle);
 }
 

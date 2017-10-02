@@ -220,7 +220,7 @@ class GcsRandomAccessFile : public RandomAccessFile {
   /// The implementation of reads with a read-ahead buffer. Thread-safe.
   Status Read(uint64 offset, size_t n, StringPiece* result,
               char* scratch) const override {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     const bool range_start_included = offset >= buffer_start_offset_;
     const bool range_end_included =
         offset + n <= buffer_start_offset_ + buffer_.size();

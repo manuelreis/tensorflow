@@ -819,7 +819,7 @@ void TF_GraphSetTensorShape(TF_Graph* graph, TF_Output output,
                             TF_Status* status) {
   Node* node = &output.oper->node;
 
-  mutex_lock l(graph->mu);
+  mutex_lock l(graph->mu, __PRETTY_FUNCTION__);
   // Set the shape.
   tensorflow::shape_inference::InferenceContext* ic =
       graph->refiner.GetContext(node);
@@ -842,7 +842,7 @@ int TF_GraphGetTensorNumDims(TF_Graph* graph, TF_Output output,
                              TF_Status* status) {
   Node* node = &output.oper->node;
 
-  mutex_lock l(graph->mu);
+  mutex_lock l(graph->mu, __PRETTY_FUNCTION__);
   tensorflow::shape_inference::InferenceContext* ic =
       graph->refiner.GetContext(node);
   if (ic == nullptr) {
@@ -865,7 +865,7 @@ void TF_GraphGetTensorShape(TF_Graph* graph, TF_Output output, int64_t* dims,
                             int num_dims, TF_Status* status) {
   Node* node = &output.oper->node;
 
-  mutex_lock l(graph->mu);
+  mutex_lock l(graph->mu, __PRETTY_FUNCTION__);
   tensorflow::shape_inference::InferenceContext* ic =
       graph->refiner.GetContext(node);
   if (ic == nullptr) {
@@ -917,7 +917,7 @@ static TF_OperationDescription* TF_NewOperationLocked(TF_Graph* graph,
 
 TF_OperationDescription* TF_NewOperation(TF_Graph* graph, const char* op_type,
                                          const char* oper_name) {
-  mutex_lock l(graph->mu);
+  mutex_lock l(graph->mu, __PRETTY_FUNCTION__);
   return TF_NewOperationLocked(graph, op_type, oper_name);
 }
 
@@ -1182,7 +1182,7 @@ static TF_Operation* TF_FinishOperationLocked(TF_OperationDescription* desc,
 
 TF_Operation* TF_FinishOperation(TF_OperationDescription* desc,
                                  TF_Status* status) {
-  mutex_lock l(desc->graph->mu);
+  mutex_lock l(desc->graph->mu, __PRETTY_FUNCTION__);
   return TF_FinishOperationLocked(desc, status);
 }
 
@@ -1625,7 +1625,7 @@ void TF_OperationToNodeDef(TF_Operation* oper, TF_Buffer* output_node_def,
 TF_Graph* TF_NewGraph() { return new TF_Graph; }
 
 void TF_DeleteGraph(TF_Graph* g) {
-  g->mu.lock();
+  g->mu.lock(__PRETTY_FUNCTION__);
   g->delete_requested = true;
   const bool del = g->num_sessions == 0;
   g->mu.unlock();
@@ -1633,7 +1633,7 @@ void TF_DeleteGraph(TF_Graph* g) {
 }
 
 TF_Operation* TF_GraphOperationByName(TF_Graph* graph, const char* oper_name) {
-  mutex_lock l(graph->mu);
+  mutex_lock l(graph->mu, __PRETTY_FUNCTION__);
   auto iter = graph->name_map.find(oper_name);
   if (iter == graph->name_map.end()) {
     return nullptr;
@@ -1651,7 +1651,7 @@ TF_Operation* TF_GraphNextOperation(TF_Graph* graph, size_t* pos) {
     *pos += 1;
   }
 
-  mutex_lock l(graph->mu);
+  mutex_lock l(graph->mu, __PRETTY_FUNCTION__);
   while (*pos < static_cast<size_t>(graph->graph.num_node_ids())) {
     Node* node = graph->graph.FindNodeId(*pos);
     // FindNodeId() returns nullptr for nodes that have been deleted.
@@ -1669,7 +1669,7 @@ void TF_GraphToGraphDef(TF_Graph* graph, TF_Buffer* output_graph_def,
                         TF_Status* status) {
   GraphDef def;
   {
-    mutex_lock l(graph->mu);
+    mutex_lock l(graph->mu, __PRETTY_FUNCTION__);
     graph->graph.ToGraphDef(&def);
   }
   status->status = MessageToBuffer(def, output_graph_def);
@@ -1766,7 +1766,7 @@ void TF_GraphImportGraphDefWithReturnOutputs(
     status->status = InvalidArgument("Invalid GraphDef");
     return;
   }
-  mutex_lock l(graph->mu);
+  mutex_lock l(graph->mu, __PRETTY_FUNCTION__);
   GraphImportGraphDefLocked(graph, def, opts, return_outputs,
                             num_return_outputs, status);
 }
@@ -2019,7 +2019,7 @@ void TF_FinishWhileHelper(const TF_WhileParams* params, TF_Status* status,
   TF_Output* parent_inputs = params->cond_graph->parent_inputs;
   int n = params->ninputs;
 
-  mutex_lock l(parent->mu);
+  mutex_lock l(parent->mu, __PRETTY_FUNCTION__);
 
   // Create Enter nodes
   std::vector<TF_Output> enter_nodes(n);
@@ -2109,7 +2109,7 @@ TF_Session* TF_NewSession(TF_Graph* graph, const TF_SessionOptions* opt,
   status->status = NewSession(opt->options, &session);
   if (status->status.ok()) {
     if (graph != nullptr) {
-      mutex_lock l(graph->mu);
+      mutex_lock l(graph->mu, __PRETTY_FUNCTION__);
       graph->num_sessions += 1;
     }
     return new TF_Session(session, graph);
@@ -2132,7 +2132,7 @@ TF_Session* TF_LoadSessionFromSavedModel(
       "important to you");
   return nullptr;
 #else
-  mutex_lock l(graph->mu);
+  mutex_lock l(graph->mu, __PRETTY_FUNCTION__);
 
   if (!graph->name_map.empty()) {
     status->status = InvalidArgument("Graph is non-empty.");
@@ -2190,7 +2190,7 @@ void TF_DeleteSession(TF_Session* s, TF_Status* status) {
   status->status = Status::OK();
   TF_Graph* const graph = s->graph;
   if (graph != nullptr) {
-    graph->mu.lock();
+    graph->mu.lock(__PRETTY_FUNCTION__);
     graph->num_sessions -= 1;
     const bool del = graph->delete_requested && graph->num_sessions == 0;
     graph->mu.unlock();
@@ -2205,8 +2205,8 @@ void TF_DeleteSession(TF_Session* s, TF_Status* status) {
 // call Session::Extend().
 static bool ExtendSessionGraphHelper(TF_Session* session, TF_Status* status) {
   if (session->graph != nullptr) {
-    mutex_lock session_lock(session->mu);
-    session->graph->mu.lock();
+    mutex_lock session_lock(session->mu, __PRETTY_FUNCTION__);
+    session->graph->mu.lock(__PRETTY_FUNCTION__);
     const Graph& graph = session->graph->graph;
     const auto num_nodes = graph.num_node_ids();
     if (session->last_num_graph_nodes < num_nodes) {

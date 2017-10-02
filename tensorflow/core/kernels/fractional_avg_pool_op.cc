@@ -86,7 +86,7 @@ class FractionalAvgPoolOp : public OpKernel {
                                               &generator_, pseudo_random_);
         col_cum_seq = GeneratePoolingSequence(input_size_[2], output_size_[2],
                                               &generator_, pseudo_random_);
-        mutex_lock lock(mu_);
+        mutex_lock lock(mu_, __PRETTY_FUNCTION__);
         row_cum_seq_ = row_cum_seq;
         col_cum_seq_ = col_cum_seq;
         pooling_region_generated_ = true;

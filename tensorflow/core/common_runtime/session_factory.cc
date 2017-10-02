@@ -43,7 +43,8 @@ SessionFactories* session_factories() {
 
 void SessionFactory::Register(const string& runtime_type,
                               SessionFactory* factory) {
-  mutex_lock l(*get_session_factory_lock());
+  //mutex_lock l(*get_session_factory_lock(), __PRETTY_FUNCTION__);
+  mutex_lock l(*get_session_factory_lock(), "0");
   if (!session_factories()->insert({runtime_type, factory}).second) {
     LOG(ERROR) << "Two session factories are being registered "
                << "under" << runtime_type;
@@ -67,7 +68,7 @@ string SessionOptionsToString(const SessionOptions& options) {
 
 Status SessionFactory::GetFactory(const SessionOptions& options,
                                   SessionFactory** out_factory) {
-  mutex_lock l(*get_session_factory_lock());  // could use reader lock
+  mutex_lock l(*get_session_factory_lock(), __PRETTY_FUNCTION__);  // could use reader lock
 
   std::vector<std::pair<string, SessionFactory*>> candidate_factories;
   for (const auto& session_factory : *session_factories()) {

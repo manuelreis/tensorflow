@@ -58,7 +58,7 @@ class RandomShuffleQueue : public TypedQueue<std::vector<PersistentTensor> > {
   Status MatchesNodeDef(const NodeDef& node_def) override;
 
   int32 size() override {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     return queues_[0].size();
   }
 
@@ -104,7 +104,7 @@ RandomShuffleQueue::RandomShuffleQueue(
 Status RandomShuffleQueue::Initialize() {
   TF_RETURN_IF_ERROR(TypedQueue::Initialize());
 
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   for (int i = 0; i < num_components(); ++i) {
     queues_[i].reserve(min_after_dequeue_);
   }
@@ -128,7 +128,7 @@ void RandomShuffleQueue::TryEnqueue(const Tuple& tuple, OpKernelContext* ctx,
   CancellationToken token = cm->get_cancellation_token();
   bool already_cancelled;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     already_cancelled = !cm->RegisterCallback(
         token, [this, cm, token]() { Cancel(kEnqueue, cm, token); });
     if (!already_cancelled) {
@@ -186,7 +186,7 @@ void RandomShuffleQueue::TryEnqueueMany(const Tuple& tuple,
   CancellationToken token = cm->get_cancellation_token();
   bool already_cancelled;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     already_cancelled = !cm->RegisterCallback(
         token, [this, cm, token]() { Cancel(kEnqueue, cm, token); });
     if (!already_cancelled) {
@@ -233,7 +233,7 @@ void RandomShuffleQueue::TryDequeue(OpKernelContext* ctx,
   CancellationToken token = cm->get_cancellation_token();
   bool already_cancelled;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     already_cancelled = !cm->RegisterCallback(
         token, [this, cm, token]() { Cancel(kDequeue, cm, token); });
     if (!already_cancelled) {
@@ -325,7 +325,7 @@ void RandomShuffleQueue::TryDequeueMany(int num_elements, OpKernelContext* ctx,
   CancellationToken token = cm->get_cancellation_token();
   bool already_cancelled;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     already_cancelled = !cm->RegisterCallback(
         token, [this, cm, token]() { Cancel(kDequeue, cm, token); });
     if (!already_cancelled) {

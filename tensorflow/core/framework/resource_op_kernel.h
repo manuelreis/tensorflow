@@ -65,7 +65,7 @@ class ResourceOpKernel : public OpKernel {
   }
 
   void Compute(OpKernelContext* context) override LOCKS_EXCLUDED(mu_) {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (resource_ == nullptr) {
       ResourceMgr* mgr = context->resource_manager();
       OP_REQUIRES_OK(context, cinfo_.Init(mgr, def()));

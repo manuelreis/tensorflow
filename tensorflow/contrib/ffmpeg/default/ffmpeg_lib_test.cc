@@ -43,7 +43,7 @@ mutex mu;
 bool should_ffmpeg_be_installed GUARDED_BY(mu) = false;
 
 string ParseTestFlags(int* argc, char** argv) {
-  mutex_lock l(mu);
+  mutex_lock l(mu, __PRETTY_FUNCTION__);
   std::vector<Flag> flag_list = {
       Flag("should_ffmpeg_be_installed", &should_ffmpeg_be_installed,
            "indicates that ffmpeg should be installed")};
@@ -57,7 +57,7 @@ string ParseTestFlags(int* argc, char** argv) {
 
 TEST(FfmpegLibTest, TestUninstalled) {
   {
-    mutex_lock l(mu);
+    mutex_lock l(mu, __PRETTY_FUNCTION__);
     if (should_ffmpeg_be_installed) {
       return;
     }
@@ -72,7 +72,7 @@ TEST(FfmpegLibTest, TestUninstalled) {
 
 TEST(FfmpegLibTest, TestInstalled) {
   {
-    mutex_lock l(mu);
+    mutex_lock l(mu, __PRETTY_FUNCTION__);
     if (!should_ffmpeg_be_installed) {
       return;
     }
@@ -87,7 +87,7 @@ TEST(FfmpegLibTest, TestInstalled) {
 
 TEST(FfmpegLibTest, TestRoundTripGeneratedWav) {
   {
-    mutex_lock l(mu);
+    mutex_lock l(mu, __PRETTY_FUNCTION__);
     if (!should_ffmpeg_be_installed) {
       return;
     }
@@ -115,7 +115,7 @@ TEST(FfmpegLibTest, TestRoundTripGeneratedWav) {
 
 TEST(FfmpegLibTest, TestRoundTripWav) {
   {
-    mutex_lock l(mu);
+    mutex_lock l(mu, __PRETTY_FUNCTION__);
     if (!should_ffmpeg_be_installed) {
       return;
     }

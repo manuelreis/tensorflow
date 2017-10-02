@@ -30,7 +30,7 @@ struct NcclManager::NcclStream {
  public:
   NcclStream() {}
   ~NcclStream() {
-    mutex_lock l(mu);
+    mutex_lock l(mu, __PRETTY_FUNCTION__);
     shutdown_requested = true;
     cv.notify_all();
   }
@@ -184,7 +184,7 @@ NcclManager::Communicator* NcclManager::GetCommunicator(
             });
   const int num_devices = collective->participants.size();
 
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
 
   // Scan to find an existing communicator that provides nccl communication
   // between the executors used by the participants in the collective. For
@@ -312,7 +312,7 @@ void NcclManager::AddParticipant(int num_devices, const string& key,
                                  ncclRedOp_t reduction_op) {
   Collective* to_run = nullptr;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     auto& collective_ptr = collectives_[key];
     if (collective_ptr == nullptr) {
       collective_ptr.reset(new Collective(data_type, collective_type,
@@ -371,10 +371,10 @@ void NcclManager::RunCollective(const string& key, Collective* collective) {
     // is to prevent collectives from deadlocking each other.
     // Note that it would be possible to run multiple collectives at once, if
     // they have non-intersecting sets of devices.
-    mutex_lock l(collective_mu);
+    mutex_lock l(collective_mu, __PRETTY_FUNCTION__);
     for (int rank = 0; rank < size; ++rank) {
       NcclStream* nccl_stream = communicator->members[rank].nccl_stream;
-      mutex_lock l(nccl_stream->mu);
+      mutex_lock l(nccl_stream->mu, __PRETTY_FUNCTION__);
       nccl_stream->pending_launches_.push_front(
           std::make_pair(collective, rank));
       nccl_stream->cv.notify_all();
@@ -392,7 +392,7 @@ void NcclManager::LoopKernelLaunches(NcclStream* nccl_stream) {
     // Find collective to run.
     std::pair<Collective*, int> next_launch;
     {
-      mutex_lock l(nccl_stream->mu);
+      mutex_lock l(nccl_stream->mu, __PRETTY_FUNCTION__);
       while (nccl_stream->pending_launches_.empty()) {
         if (nccl_stream->shutdown_requested) {
           // No work and shutdown requested, exit.

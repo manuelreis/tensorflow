@@ -28,14 +28,14 @@ void Collector::CollectMetricValues(
 }
 
 std::unique_ptr<CollectedMetrics> Collector::ConsumeCollectedMetrics() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return std::move(collected_metrics_);
 }
 
 void Collector::CollectMetricDescriptor(
     const AbstractMetricDef* const metric_def) {
   auto* const metric_descriptor = [&]() {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     return collected_metrics_->metric_descriptor_map
         .insert(std::make_pair(
             metric_def->name().ToString(),
@@ -70,7 +70,8 @@ CollectionRegistry::Register(const AbstractMetricDef* const metric_def,
   CHECK(collection_function)
       << "Requires collection_function to contain an implementation.";
 
-  mutex_lock l(mu_);
+  //mutex_lock l(mu_, __PRETTY_FUNCTION__);
+  mutex_lock l(mu_, "0");
 
   const auto found_it = registry_.find(metric_def->name());
   if (found_it != registry_.end()) {
@@ -86,7 +87,7 @@ CollectionRegistry::Register(const AbstractMetricDef* const metric_def,
 }
 
 void CollectionRegistry::Unregister(const AbstractMetricDef* const metric_def) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   registry_.erase(metric_def->name());
 }
 
@@ -94,7 +95,7 @@ std::unique_ptr<CollectedMetrics> CollectionRegistry::CollectMetrics(
     const CollectMetricsOptions& options) const {
   internal::Collector collector(env_->NowMicros() / 1000);
 
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   for (const auto& registration : registry_) {
     if (options.collect_metric_descriptors) {
       collector.CollectMetricDescriptor(registration.second.metric_def);

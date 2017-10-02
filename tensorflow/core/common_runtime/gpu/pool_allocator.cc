@@ -106,7 +106,7 @@ void* PoolAllocator::AllocateRaw(size_t alignment, size_t num_bytes) {
   PtrRecord* pr = nullptr;
   if (has_size_limit_) {
     {
-      mutex_lock lock(mutex_);
+      mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
       auto iter = pool_.find(num_bytes);
       if (iter == pool_.end()) {
         allocated_count_++;
@@ -145,7 +145,7 @@ void PoolAllocator::DeallocateRaw(void* ptr) {
     }
     allocator_->Free(cp, cp->num_bytes);
   } else {
-    mutex_lock lock(mutex_);
+    mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
     ++put_count_;
     while (pool_.size() >= pool_size_limit_) {
       EvictOne();
@@ -160,7 +160,7 @@ void PoolAllocator::DeallocateRaw(void* ptr) {
 
 void PoolAllocator::Clear() {
   if (has_size_limit_) {
-    mutex_lock lock(mutex_);
+    mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
     for (auto iter : pool_) {
       PtrRecord* pr = iter.second;
       for (const auto& v : free_visitors_) {
@@ -271,7 +271,7 @@ void PoolAllocator::EvictOne() {
 }
 
 void PoolAllocator::AddAllocVisitor(Visitor visitor) {
-  mutex_lock lock(mutex_);
+  mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
   CHECK(!allocation_begun_)
       << "AddAllocVisitor may not be called after pool allocation "
       << "has begun.";
@@ -279,7 +279,7 @@ void PoolAllocator::AddAllocVisitor(Visitor visitor) {
 }
 
 void PoolAllocator::AddFreeVisitor(Visitor visitor) {
-  mutex_lock lock(mutex_);
+  mutex_lock lock(mutex_, __PRETTY_FUNCTION__);
   CHECK(!allocation_begun_)
       << "AddFreeVisitor may not be called after pool allocation "
       << "has begun.";

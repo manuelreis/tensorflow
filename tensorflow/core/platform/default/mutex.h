@@ -23,6 +23,11 @@ limitations under the License.
 #include <condition_variable>
 #include <mutex>
 #include "tensorflow/core/platform/thread_annotations.h"
+//(dleoni) Include the following library in order to print the name of the function using mutexes
+#include <iostream>
+#include <string.h>
+#include <stdio.h>
+
 namespace tensorflow {
 
 #undef mutex_lock
@@ -38,8 +43,11 @@ class LOCKABLE mutex : public std::mutex {
   // initializations
   explicit mutex(LinkerInitialized x) {}
 
-  void lock() ACQUIRE() { std::mutex::lock(); }
-  bool try_lock() EXCLUSIVE_TRYLOCK_FUNCTION(true) {
+  //(dleoni) Debug trick: print the name of the function that is using a mutex
+  //void lock() ACQUIRE() { std::mutex::lock(); }
+  void lock(const char *caller_name) ACQUIRE(caller_name) { if(strcmp(caller_name, "0")) std::cout << "CALLER:" << caller_name << std::endl; std::mutex::lock(); }
+  bool try_lock(const char *caller_name) EXCLUSIVE_TRYLOCK_FUNCTION(true) {
+    std::cout << "CALLER:" << caller_name << std::endl;
     return std::mutex::try_lock();
   };
   void unlock() RELEASE() { std::mutex::unlock(); }
@@ -47,11 +55,17 @@ class LOCKABLE mutex : public std::mutex {
 
 class SCOPED_LOCKABLE mutex_lock : public std::unique_lock<std::mutex> {
  public:
+  //(dleoni) Debug trick: print the name of the function that is using a mutex
   mutex_lock(class mutex& m) ACQUIRE(m) : std::unique_lock<std::mutex>(m) {}
   mutex_lock(class mutex& m, std::try_to_lock_t t) ACQUIRE(m)
       : std::unique_lock<std::mutex>(m, t) {}
   mutex_lock(mutex_lock&& ml) noexcept
       : std::unique_lock<std::mutex>(std::move(ml)) {}
+  mutex_lock(class mutex& m, const char *caller_name) ACQUIRE(m, caller_name) : std::unique_lock<std::mutex>(m) {if(strcmp(caller_name, "0")) std::cout << "CALLER:" << caller_name << std::endl;}
+  mutex_lock(class mutex& m, std::try_to_lock_t t, const char *caller_name) ACQUIRE(m, caller_name)
+      : std::unique_lock<std::mutex>(m, t) {std::cout << "CALLER:" << caller_name << std::endl;}
+  mutex_lock(mutex_lock&& ml, const char *caller_name) noexcept
+      : std::unique_lock<std::mutex>(std::move(ml)) {std::cout << "CALLER:" << caller_name << std::endl;}
   ~mutex_lock() RELEASE() {}
 };
 

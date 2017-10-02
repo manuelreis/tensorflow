@@ -71,7 +71,7 @@ class EventMgr {
                                BufRec bufrec) {
     ToFreeVector to_free;
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       QueueBuffer(stream, bufrec);
       PollEvents(false, &to_free);
     }
@@ -82,7 +82,7 @@ class EventMgr {
                           std::function<void()> func) {
     ToFreeVector to_free;
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       QueueFunc(stream, std::move(func));
       PollEvents(false, &to_free);
     }

@@ -279,7 +279,7 @@ TEST_F(DebugIOUtilsTest, PublishTensorConcurrentlyToPartiallyOverlappingPaths) {
     string dump_root;
     string debug_url;
     {
-      mutex_lock l(mu);
+      mutex_lock l(mu, __PRETTY_FUNCTION__);
       dump_root =
           strings::StrCat(dump_root_base, "grumpy/", "dump_", dump_count++);
 
@@ -298,7 +298,7 @@ TEST_F(DebugIOUtilsTest, PublishTensorConcurrentlyToPartiallyOverlappingPaths) {
     ASSERT_TRUE(s.ok());
 
     {
-      mutex_lock l(mu);
+      mutex_lock l(mu, __PRETTY_FUNCTION__);
 
       done_count++;
       if (done_count == kConcurrentPubs) {
@@ -316,7 +316,7 @@ TEST_F(DebugIOUtilsTest, PublishTensorConcurrentlyToPartiallyOverlappingPaths) {
   delete tp;
 
   {
-    mutex_lock l(mu);
+    mutex_lock l(mu, __PRETTY_FUNCTION__);
 
     for (int i = 1; i < kConcurrentPubs; ++i) {
       ASSERT_NE(dump_roots[0], dump_roots[i]);

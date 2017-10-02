@@ -22,7 +22,7 @@ namespace tensorflow {
 CallOptions::CallOptions() {}
 
 void CallOptions::StartCancel() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   if (cancel_func_ != nullptr) {
     // NOTE: We must call the cancel_func_ with mu_ held. This ensure
     // that ClearCancelCallback() does not race with StartCancel().
@@ -32,22 +32,22 @@ void CallOptions::StartCancel() {
 }
 
 void CallOptions::SetCancelCallback(CancelFunction cancel_func) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   cancel_func_ = std::move(cancel_func);
 }
 
 void CallOptions::ClearCancelCallback() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   cancel_func_ = nullptr;
 }
 
 int64 CallOptions::GetTimeout() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return timeout_in_ms_;
 }
 
 void CallOptions::SetTimeout(int64 ms) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   timeout_in_ms_ = ms;
 }
 

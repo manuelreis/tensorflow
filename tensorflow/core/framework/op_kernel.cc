@@ -229,7 +229,7 @@ Allocator* OpKernelContext::get_allocator(AllocatorAttributes attr) {
   Allocator* allocator =
       params_->device->GetStepAllocator(attr, resource_manager());
   if (track_allocations()) {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     for (const auto& wrapped : wrapped_allocators_) {
       if (wrapped.first == allocator) {
         return wrapped.second;
@@ -249,7 +249,7 @@ void OpKernelContext::SetStatus(const Status& status) {
 }
 
 void OpKernelContext::really_record_tensor_reference(const Tensor& tensor) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   // Keep a reference to the underlying memory around.
   referenced_tensors_->Add(tensor);
 }
@@ -321,7 +321,7 @@ Tensor OpKernelContext::mutable_input(int index, bool lock_held) {
     record_tensor_reference(tensor);
     return tensor;
   } else {
-    mutex_lock l(*input_ref_mutex(index));
+    mutex_lock l(*input_ref_mutex(index), __PRETTY_FUNCTION__);
     Tensor& tensor = *((*params_->inputs)[index].tensor);
     record_tensor_reference(tensor);
     return tensor;
@@ -337,7 +337,7 @@ void OpKernelContext::replace_ref_input(int index, const Tensor& tensor,
   if (lock_held) {
     *(*params_->inputs)[index].tensor = tensor;
   } else {
-    mutex_lock l(*input_ref_mutex(index));
+    mutex_lock l(*input_ref_mutex(index), __PRETTY_FUNCTION__);
     *(*params_->inputs)[index].tensor = tensor;
   }
   record_tensor_reference(tensor);
@@ -461,7 +461,7 @@ void OpKernelContext::delete_ref_input(int index, bool lock_held) {
   if (lock_held) {
     delete (*params_->inputs)[index].tensor;
   } else {
-    mutex_lock l(*input_ref_mutex(index));
+    mutex_lock l(*input_ref_mutex(index), __PRETTY_FUNCTION__);
     delete (*params_->inputs)[index].tensor;
   }
 }
@@ -483,7 +483,7 @@ Status OpKernelContext::mutable_input(StringPiece name, Tensor* tensor,
   if (lock_held) {
     *tensor = *(*params_->inputs)[start].tensor;
   } else {
-    mutex_lock l(*input_ref_mutex(start));
+    mutex_lock l(*input_ref_mutex(start), __PRETTY_FUNCTION__);
     *tensor = *(*params_->inputs)[start].tensor;
   }
   record_tensor_reference(*tensor);

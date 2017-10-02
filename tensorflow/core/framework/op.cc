@@ -48,7 +48,8 @@ OpRegistry::~OpRegistry() {
 }
 
 void OpRegistry::Register(OpRegistrationDataFactory op_data_factory) {
-  mutex_lock lock(mu_);
+  //mutex_lock lock(mu_, __PRETTY_FUNCTION__);
+  mutex_lock lock(mu_, "0");
   if (initialized_) {
     TF_QCHECK_OK(RegisterAlreadyLocked(op_data_factory));
   } else {
@@ -63,7 +64,7 @@ Status OpRegistry::LookUp(const string& op_type_name,
 
   bool first_call = false;
   {  // Scope for lock.
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     first_call = MustCallDeferred();
     res = gtl::FindWithDefault(registry_, op_type_name, nullptr);
     // Note: Can't hold mu_ while calling Export() below.
@@ -92,7 +93,7 @@ Status OpRegistry::LookUp(const string& op_type_name,
 }
 
 void OpRegistry::GetRegisteredOps(std::vector<OpDef>* op_defs) {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   MustCallDeferred();
   for (const auto& p : registry_) {
     op_defs->push_back(p.second->op_def);
@@ -100,7 +101,7 @@ void OpRegistry::GetRegisteredOps(std::vector<OpDef>* op_defs) {
 }
 
 Status OpRegistry::SetWatcher(const Watcher& watcher) {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   if (watcher_ && watcher) {
     return errors::AlreadyExists(
         "Cannot over-write a valid watcher with another.");
@@ -110,7 +111,8 @@ Status OpRegistry::SetWatcher(const Watcher& watcher) {
 }
 
 void OpRegistry::Export(bool include_internal, OpList* ops) const {
-  mutex_lock lock(mu_);
+  //mutex_lock lock(mu_, __PRETTY_FUNCTION__);
+  mutex_lock lock(mu_, "0");
   MustCallDeferred();
 
   std::vector<std::pair<string, const OpRegistrationData*>> sorted(
@@ -129,17 +131,17 @@ void OpRegistry::Export(bool include_internal, OpList* ops) const {
 }
 
 void OpRegistry::DeferRegistrations() {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   initialized_ = false;
 }
 
 void OpRegistry::ClearDeferredRegistrations() {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   deferred_.clear();
 }
 
 Status OpRegistry::ProcessRegistrations() const {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   return CallDeferred();
 }
 

@@ -160,14 +160,14 @@ LocalMasterRegistry* local_master_registry() {
 
 /* static */
 void LocalMaster::Register(const string& target, Master* master) {
-  mutex_lock l(*get_local_master_registry_lock());
+  mutex_lock l(*get_local_master_registry_lock(), __PRETTY_FUNCTION__);
   local_master_registry()->insert({target, master});
 }
 
 /* static */
 std::unique_ptr<LocalMaster> LocalMaster::Lookup(const string& target) {
   std::unique_ptr<LocalMaster> ret;
-  mutex_lock l(*get_local_master_registry_lock());
+  mutex_lock l(*get_local_master_registry_lock(), __PRETTY_FUNCTION__);
   auto iter = local_master_registry()->find(target);
   if (iter != local_master_registry()->end()) {
     ret.reset(new LocalMaster(iter->second));

@@ -34,12 +34,12 @@ Status QueueRunner::New(const QueueRunnerDef& queue_runner_def,
 }
 
 void QueueRunner::AddErrorCallback(const std::function<void(Status)>& cb) {
-  mutex_lock l(cb_mu_);
+  mutex_lock l(cb_mu_, __PRETTY_FUNCTION__);
   callbacks_.push_back(cb);
 }
 
 void QueueRunner::ClearErrorCallbacks() {
-  mutex_lock l(cb_mu_);
+  mutex_lock l(cb_mu_, __PRETTY_FUNCTION__);
   callbacks_.clear();
 }
 
@@ -105,7 +105,7 @@ Status QueueRunner::Start(Session* sess, int wait_for) {
     }
     // Check the status of the queue runner as well as the result of the enqueue
     // operations.
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (!enqueue_status_.ok()) {
       return enqueue_status_;
     } else {
@@ -134,13 +134,13 @@ void QueueRunner::Stop(Session* sess) {
 
 Status QueueRunner::Join() {
   thread_pool_.reset();
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return status_;
 }
 
 void QueueRunner::UpdateStatus(const Status& status) {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (!status_.ok() || status.ok() || IsQueueClosed(status)) {
       return;
     }
@@ -149,7 +149,7 @@ void QueueRunner::UpdateStatus(const Status& status) {
   if (coord_) {
     coord_->ReportStatus(status);
   }
-  mutex_lock l(cb_mu_);
+  mutex_lock l(cb_mu_, __PRETTY_FUNCTION__);
   for (auto& cb : callbacks_) {
     cb(status);
   }
@@ -165,7 +165,7 @@ void QueueRunner::Run(Session* sess, const string& enqueue_op) {
     status = RealRun(sess, enqueue_op);
     if (first_iteration) {
       if (!status.ok()) {
-        mutex_lock l(mu_);
+        mutex_lock l(mu_, __PRETTY_FUNCTION__);
         enqueue_status_ = status;
       }
       counter_->DecrementCount();
@@ -174,7 +174,7 @@ void QueueRunner::Run(Session* sess, const string& enqueue_op) {
   }
   bool last_run = false;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     runs_--;
     last_run = (runs_ == 0);
   }
@@ -194,7 +194,7 @@ void QueueRunner::Run(Session* sess, const string& enqueue_op) {
 }
 
 Status QueueRunner::GetStatus() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return status_;
 }
 
@@ -203,7 +203,7 @@ Status QueueRunner::ExportRunMetadata(RunMetadata* metadata) const {
     return Status(error::FAILED_PRECONDITION,
                   "This QueueRunner doesn't collect and store RunMetadata.");
   }
-  mutex_lock l(*rm_mu_);
+  mutex_lock l(*rm_mu_, __PRETTY_FUNCTION__);
   metadata->MergeFrom(*run_metadata_);
   return Status::OK();
 }
@@ -211,7 +211,7 @@ Status QueueRunner::ExportRunMetadata(RunMetadata* metadata) const {
 void QueueRunner::SetRunArgumentsAndRunMetadata(const RunOptions* run_options) {
   rm_mu_.reset(new mutex());
   {
-    mutex_lock l(*rm_mu_);
+    mutex_lock l(*rm_mu_, __PRETTY_FUNCTION__);
     run_metadata_.reset(new RunMetadata());
   }
   if (run_options) {
@@ -224,7 +224,7 @@ Status QueueRunner::RealRun(Session* sess, const string& op) {
   if (rm_mu_) {
     RunMetadata metadata;
     s = sess->Run(run_options_, {}, {}, {op}, nullptr, &metadata);
-    mutex_lock l(*rm_mu_);
+    mutex_lock l(*rm_mu_, __PRETTY_FUNCTION__);
     run_metadata_->MergeFrom(metadata);
   } else {
     s = sess->Run({}, {}, {op}, nullptr);

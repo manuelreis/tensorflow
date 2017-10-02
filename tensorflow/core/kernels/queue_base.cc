@@ -206,7 +206,7 @@ void QueueBase::Cancel(Action action, CancellationManager* cancellation_manager,
                        CancellationToken token) {
   DoneCallback callback = nullptr;
   {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     std::deque<Attempt>* attempts =
         action == kEnqueue ? &enqueue_attempts_ : &dequeue_attempts_;
 
@@ -237,7 +237,7 @@ void QueueBase::Cancel(Action action, CancellationManager* cancellation_manager,
 void QueueBase::CloseAndCancel() {
   std::vector<DoneCallback> callbacks;
   {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     closed_ = true;
     for (Attempt& attempt : enqueue_attempts_) {
       if (!attempt.is_cancelled) {
@@ -261,7 +261,7 @@ void QueueBase::Close(OpKernelContext* ctx, bool cancel_pending_enqueues,
     callback();
   } else {
     {
-      mutex_lock lock(mu_);
+      mutex_lock lock(mu_, __PRETTY_FUNCTION__);
       enqueue_attempts_.emplace_back(
           0, callback, ctx, nullptr, CancellationManager::kInvalidToken,
           [this](Attempt* attempt) EXCLUSIVE_LOCKS_REQUIRED(mu_) {
@@ -332,7 +332,7 @@ void QueueBase::FlushUnlocked() {
   std::vector<CleanUp> clean_up;
   Ref();
   {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     bool changed;
     do {
       changed = TryAttemptLocked(kEnqueue, &clean_up);

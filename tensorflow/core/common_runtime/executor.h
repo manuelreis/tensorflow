@@ -187,7 +187,7 @@ class ExecutorBarrier {
     StatusCallback done = nullptr;
     Status status;
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       // If we are the first error encountered, mark the status
       // appropriately and later trigger an abort of the Rendezvous
       // object by this thread only.

@@ -54,7 +54,7 @@ static mutex& GetPluginRegistryMutex() {
 PluginRegistry::PluginRegistry() {}
 
 /* static */ PluginRegistry* PluginRegistry::Instance() {
-  mutex_lock lock{GetPluginRegistryMutex()};
+  mutex_lock lock{GetPluginRegistryMutex(), __PRETTY_FUNCTION__};
   if (instance_ == nullptr) {
     instance_ = new PluginRegistry();
   }
@@ -70,7 +70,7 @@ template <typename FACTORY_TYPE>
 port::Status PluginRegistry::RegisterFactoryInternal(
     PluginId plugin_id, const string& plugin_name, FACTORY_TYPE factory,
     std::map<PluginId, FACTORY_TYPE>* factories) {
-  mutex_lock lock{GetPluginRegistryMutex()};
+  mutex_lock lock{GetPluginRegistryMutex(), __PRETTY_FUNCTION__};
 
   if (factories->find(plugin_id) != factories->end()) {
     return port::Status{

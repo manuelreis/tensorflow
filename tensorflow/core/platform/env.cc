@@ -48,7 +48,8 @@ class FileSystemRegistryImpl : public FileSystemRegistry {
 
 Status FileSystemRegistryImpl::Register(const string& scheme,
                                         FileSystemRegistry::Factory factory) {
-  mutex_lock lock(mu_);
+  //mutex_lock lock(mu_, __PRETTY_FUNCTION__);
+  mutex_lock lock(mu_, "0");
   if (!registry_.emplace(string(scheme), std::unique_ptr<FileSystem>(factory()))
            .second) {
     return errors::AlreadyExists("File factory for ", scheme,
@@ -58,7 +59,8 @@ Status FileSystemRegistryImpl::Register(const string& scheme,
 }
 
 FileSystem* FileSystemRegistryImpl::Lookup(const string& scheme) {
-  mutex_lock lock(mu_);
+  //mutex_lock lock(mu_, __PRETTY_FUNCTION__);
+  mutex_lock lock(mu_, "0");
   const auto found = registry_.find(scheme);
   if (found == registry_.end()) {
     return nullptr;
@@ -68,7 +70,7 @@ FileSystem* FileSystemRegistryImpl::Lookup(const string& scheme) {
 
 Status FileSystemRegistryImpl::GetRegisteredFileSystemSchemes(
     std::vector<string>* schemes) {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   for (const auto& e : registry_) {
     schemes->push_back(e.first);
   }

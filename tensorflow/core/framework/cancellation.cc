@@ -28,7 +28,7 @@ CancellationManager::CancellationManager()
 void CancellationManager::StartCancel() {
   gtl::FlatMap<CancellationToken, CancelCallback> callbacks_to_run;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (is_cancelled_.load(std::memory_order_relaxed) || is_cancelling_) {
       return;
     }
@@ -44,7 +44,7 @@ void CancellationManager::StartCancel() {
     key_and_value.second();
   }
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     is_cancelling_ = false;
     is_cancelled_.store(true, std::memory_order_release);
   }
@@ -52,13 +52,13 @@ void CancellationManager::StartCancel() {
 }
 
 CancellationToken CancellationManager::get_cancellation_token() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return next_cancellation_token_++;
 }
 
 bool CancellationManager::RegisterCallback(CancellationToken token,
                                            CancelCallback callback) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   CHECK_LT(token, next_cancellation_token_) << "Invalid cancellation token";
   bool should_register = !is_cancelled_ && !is_cancelling_;
   if (should_register) {
@@ -68,7 +68,7 @@ bool CancellationManager::RegisterCallback(CancellationToken token,
 }
 
 bool CancellationManager::DeregisterCallback(CancellationToken token) {
-  mu_.lock();
+  mu_.lock(__PRETTY_FUNCTION__);
   if (is_cancelled_) {
     mu_.unlock();
     return false;

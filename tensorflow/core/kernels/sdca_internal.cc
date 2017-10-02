@@ -417,7 +417,7 @@ Status Examples::CreateSparseFeatureRepresentation(
             for (int64 k = 0; k < sparse_features->indices->size(); ++k) {
               const int64 feature_index = (*sparse_features->indices)(k);
               if (!weights.SparseIndexValid(i, feature_index)) {
-                mutex_lock l(mu);
+                mutex_lock l(mu, __PRETTY_FUNCTION__);
                 result = errors::InvalidArgument(
                     "Found sparse feature indices out of valid range: ",
                     (*sparse_features->indices)(k));
@@ -467,7 +467,7 @@ Status Examples::CreateDenseFeatureRepresentation(
             new Example::DenseVector{dense_features, example_id});
       }
       if (!weights.DenseIndexValid(i, dense_features.dimension(1) - 1)) {
-        mutex_lock l(mu);
+        mutex_lock l(mu, __PRETTY_FUNCTION__);
         result = errors::InvalidArgument(
             "More dense features than we have parameters for: ",
             dense_features.dimension(1));

@@ -38,7 +38,7 @@ void RunSharding(int64 num_workers, int64 total, int64 cost_per_unit,
           VLOG(1) << "Shard [" << start << "," << limit << ")";
           EXPECT_GE(start, 0);
           EXPECT_LE(limit, total);
-          mutex_lock l(mu);
+          mutex_lock l(mu, __PRETTY_FUNCTION__);
           ++num_shards;
           for (; start < limit; ++start) {
             EXPECT_FALSE(work[start]);  // No duplicate

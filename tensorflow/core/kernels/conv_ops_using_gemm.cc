@@ -318,7 +318,7 @@ class Im2ColConvFunctor {
     // threads, because we have a single shared resource. The platforms this is
     // aimed at have intra-op parallelism as their focus though, so it shouldn't
     // be an issue.
-    mutex_lock lock_buffer(im2col_buffer_resource->mu);
+    mutex_lock lock_buffer(im2col_buffer_resource->mu, __PRETTY_FUNCTION__);
     core::ScopedUnref unref_buffer(im2col_buffer_resource);
     T1* im2col_buffer = im2col_buffer_resource->data;
 

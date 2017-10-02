@@ -114,7 +114,7 @@ public:
 
   static void Initialize() {
     // Initialize cpuid struct
-    CHECK(cpuid == NULL) << __func__ << " ran more than once";
+    CHECK(cpuid == NULL) << __PRETTY_FUNCTION__ << " ran more than once";
     cpuid = new CPUIDInfo;
 
     uint32 eax, ebx, ecx, edx;

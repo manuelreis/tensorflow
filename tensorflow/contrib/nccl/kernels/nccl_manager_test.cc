@@ -147,7 +147,7 @@ class NcclManagerTest : public ::testing::Test {
 
   NcclManager::DoneCallback CreateDoneCallback(TestCase* test_case) {
     return [this, test_case](Status s) {
-      mutex_lock l(test_case->mu);
+      mutex_lock l(test_case->mu, __PRETTY_FUNCTION__);
       ++test_case->num_completed;
       test_case->final_status.Update(s);
     };
@@ -156,11 +156,11 @@ class NcclManagerTest : public ::testing::Test {
   void VerifyResults(const string& case_label, TestCase* test_case) {
     // Wait for the done callback to be called.
     {
-      test_case->mu.lock();
+      test_case->mu.lock(__PRETTY_FUNCTION__);
       while (test_case->num_completed != test_case->outs.size()) {
         test_case->mu.unlock();
         Env::Default()->SleepForMicroseconds(10);
-        test_case->mu.lock();
+        test_case->mu.lock(__PRETTY_FUNCTION__);
       }
       test_case->mu.unlock();
     }
@@ -248,7 +248,7 @@ TEST_F(NcclManagerTest, MultipleCallers) {
         int device_num;
         int test_num;
         {
-          mutex_lock l(mu);
+          mutex_lock l(mu, __PRETTY_FUNCTION__);
           test_num = case_and_device_num.back().first;
           device_num = case_and_device_num.back().second;
           case_and_device_num.pop_back();

@@ -141,7 +141,7 @@ class DirectSessionFactory : public SessionFactory {
     DirectSession* session =
         new DirectSession(options, new DeviceMgr(devices), this);
     {
-      mutex_lock l(sessions_lock_);
+      mutex_lock l(sessions_lock_, __PRETTY_FUNCTION__);
       sessions_.push_back(session);
     }
     return session;
@@ -151,7 +151,7 @@ class DirectSessionFactory : public SessionFactory {
                const std::vector<string>& containers) override {
     std::vector<DirectSession*> sessions_to_reset;
     {
-      mutex_lock l(sessions_lock_);
+      mutex_lock l(sessions_lock_, __PRETTY_FUNCTION__);
       // We create a copy to ensure that we don't have a deadlock when
       // session->Close calls the DirectSessionFactory.Deregister, which
       // acquires sessions_lock_.
@@ -170,7 +170,7 @@ class DirectSessionFactory : public SessionFactory {
   }
 
   void Deregister(const DirectSession* session) {
-    mutex_lock l(sessions_lock_);
+    mutex_lock l(sessions_lock_, __PRETTY_FUNCTION__);
     sessions_.erase(std::remove(sessions_.begin(), sessions_.end(), session),
                     sessions_.end());
   }
@@ -323,7 +323,7 @@ Status DirectSession::MaybeInitializeExecutionState(
 
 Status DirectSession::Create(const GraphDef& graph) {
   if (graph.node_size() > 0) {
-    mutex_lock l(graph_def_lock_);
+    mutex_lock l(graph_def_lock_, __PRETTY_FUNCTION__);
     if (graph_created_) {
       return errors::AlreadyExists(
           "A Graph has already been created for this session.");
@@ -335,7 +335,7 @@ Status DirectSession::Create(const GraphDef& graph) {
 
 Status DirectSession::Extend(const GraphDef& graph) {
   TF_RETURN_IF_ERROR(CheckNotClosed());
-  mutex_lock l(graph_def_lock_);
+  mutex_lock l(graph_def_lock_, __PRETTY_FUNCTION__);
   return ExtendLocked(graph);
 }
 
@@ -372,7 +372,7 @@ Status DirectSession::Run(const RunOptions& run_options,
   TF_RETURN_IF_ERROR(CheckNotClosed());
   direct_session_runs->GetCell()->IncrementBy(1);
   {
-    mutex_lock l(graph_def_lock_);
+    mutex_lock l(graph_def_lock_, __PRETTY_FUNCTION__);
     if (!graph_created_) {
       return errors::InvalidArgument(
           "Session was not created with a graph before Run()!");
@@ -431,7 +431,7 @@ Status DirectSession::Run(const RunOptions& run_options,
   ExecutorBarrier* barrier = new ExecutorBarrier(
       num_executors, run_state.rendez, [&run_state](const Status& ret) {
         {
-          mutex_lock l(run_state.mu_);
+          mutex_lock l(run_state.mu_, __PRETTY_FUNCTION__);
           run_state.status.Update(ret);
         }
         run_state.executors_done.Notify();
@@ -509,7 +509,7 @@ Status DirectSession::Run(const RunOptions& run_options,
   if (!cancellation_manager_->DeregisterCallback(cancellation_token)) {
     // The step has been cancelled: make sure we don't attempt to receive the
     // outputs as this would make it block forever.
-    mutex_lock l(run_state.mu_);
+    mutex_lock l(run_state.mu_, __PRETTY_FUNCTION__);
     run_state.status.Update(errors::Cancelled("Run call was cancelled"));
   }
 
@@ -522,7 +522,7 @@ Status DirectSession::Run(const RunOptions& run_options,
 #endif  // GOOGLE_CUDA
 
   {
-    mutex_lock l(run_state.mu_);
+    mutex_lock l(run_state.mu_, __PRETTY_FUNCTION__);
     TF_RETURN_IF_ERROR(run_state.status);
   }
 
@@ -535,7 +535,7 @@ Status DirectSession::Run(const RunOptions& run_options,
       run_state.tensor_store.SaveTensors(output_names, &session_state_));
 
   // Build and return the cost model as instructed.
-  mutex_lock l(executor_lock_);
+  mutex_lock l(executor_lock_, __PRETTY_FUNCTION__);
   if (update_cost_model) {
     // Build the cost model
     std::unordered_map<string, const Graph*> device_to_graph;
@@ -575,7 +575,7 @@ Status DirectSession::PRunSetup(const std::vector<string>& input_names,
                                 string* handle) {
   TF_RETURN_IF_ERROR(CheckNotClosed());
   {
-    mutex_lock l(graph_def_lock_);
+    mutex_lock l(graph_def_lock_, __PRETTY_FUNCTION__);
     if (!graph_created_) {
       return errors::InvalidArgument(
           "Session was not created with a graph before PRunSetup()!");
@@ -600,7 +600,7 @@ Status DirectSession::PRunSetup(const std::vector<string>& input_names,
       new RunState(input_names, output_names, args.step_id, &devices_);
   run_state->rendez = new IntraProcessRendezvous(device_mgr_.get());
   {
-    mutex_lock l(executor_lock_);
+    mutex_lock l(executor_lock_, __PRETTY_FUNCTION__);
     if (!partial_runs_
              .emplace(run_state_args.handle,
                       std::unique_ptr<RunState>(run_state))
@@ -615,7 +615,7 @@ Status DirectSession::PRunSetup(const std::vector<string>& input_names,
   ExecutorBarrier* barrier = new ExecutorBarrier(
       num_executors, run_state->rendez, [run_state](const Status& ret) {
         if (!ret.ok()) {
-          mutex_lock l(run_state->mu_);
+          mutex_lock l(run_state->mu_, __PRETTY_FUNCTION__);
           run_state->status.Update(ret);
         }
         run_state->executors_done.Notify();
@@ -657,7 +657,7 @@ Status DirectSession::PRun(const string& handle, const NamedTensorList& inputs,
   ExecutorsAndKeys* executors_and_keys;
   RunState* run_state;
   {
-    mutex_lock l(executor_lock_);  // could use reader lock
+    mutex_lock l(executor_lock_, __PRETTY_FUNCTION__);  // could use reader lock
     auto exc_it = executors_.find(key);
     if (exc_it == executors_.end()) {
       return errors::InvalidArgument(
@@ -709,12 +709,12 @@ Status DirectSession::PRun(const string& handle, const NamedTensorList& inputs,
   }
 
   {
-    mutex_lock l(executor_lock_);
+    mutex_lock l(executor_lock_, __PRETTY_FUNCTION__);
     // Delete the run state if there is an error or all fetches are done.
     bool done = true;
     if (s.ok()) {
       {
-        mutex_lock l(run_state->mu_);
+        mutex_lock l(run_state->mu_, __PRETTY_FUNCTION__);
         if (!run_state->status.ok()) {
           LOG(WARNING) << "An error unrelated to this prun has been detected. "
                        << run_state->status;
@@ -852,7 +852,7 @@ Status DirectSession::CheckFetch(const NamedTensorList& feeds,
   // Build the set of pending feeds that we haven't seen.
   std::unordered_set<TensorId, TensorId::Hasher> pending_feeds;
   {
-    mutex_lock l(executor_lock_);
+    mutex_lock l(executor_lock_, __PRETTY_FUNCTION__);
     for (const string& feed : run_state->pending_inputs) {
       TensorId id(ParseTensorName(feed));
       auto it = name_to_node->find(id.first);
@@ -928,7 +928,7 @@ Status DirectSession::GetOrCreateExecutors(
 
   // See if we already have the executors for this run.
   {
-    mutex_lock l(executor_lock_);  // could use reader lock
+    mutex_lock l(executor_lock_, __PRETTY_FUNCTION__);  // could use reader lock
     auto it = executors_.find(key);
     if (it != executors_.end()) {
       *executors_and_keys = it->second.get();
@@ -961,7 +961,7 @@ Status DirectSession::GetOrCreateExecutors(
 
   // See if we already have the executors for this run.
   {
-    mutex_lock l(executor_lock_);
+    mutex_lock l(executor_lock_, __PRETTY_FUNCTION__);
     auto it = executors_.find(sorted_key);
     if (it != executors_.end()) {
       *executors_and_keys = it->second.get();
@@ -1082,7 +1082,7 @@ Status DirectSession::GetOrCreateExecutors(
   }
 
   // Reacquire the lock, try to insert into the map.
-  mutex_lock l(executor_lock_);
+  mutex_lock l(executor_lock_, __PRETTY_FUNCTION__);
 
   // Another thread may have created the entry before us, in which case we will
   // reuse the already created one.
@@ -1100,7 +1100,7 @@ Status DirectSession::CreateGraphs(
     std::unordered_map<string, std::unique_ptr<Graph>>* outputs,
     std::unique_ptr<FunctionLibraryDefinition>* flib_def,
     RunStateArgs* run_state_args) {
-  mutex_lock l(graph_def_lock_);
+  mutex_lock l(graph_def_lock_, __PRETTY_FUNCTION__);
   std::unique_ptr<SimpleClientGraph> client_graph;
 
   std::unique_ptr<SimpleGraphExecutionState> temp_exec_state_holder;
@@ -1241,7 +1241,7 @@ Status DirectSession::CreateGraphs(
 ::tensorflow::Status DirectSession::Close() {
   cancellation_manager_->StartCancel();
   {
-    mutex_lock l(closed_lock_);
+    mutex_lock l(closed_lock_, __PRETTY_FUNCTION__);
     if (closed_) return ::tensorflow::Status::OK();
     closed_ = true;
   }
@@ -1290,7 +1290,7 @@ void DirectSession::WaitForNotification(RunState* run_state,
       WaitForNotification(&run_state->executors_done, timeout_in_ms);
   if (!status.ok()) {
     {
-      mutex_lock l(run_state->mu_);
+      mutex_lock l(run_state->mu_, __PRETTY_FUNCTION__);
       run_state->status.Update(status);
     }
     cm->StartCancel();

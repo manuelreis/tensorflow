@@ -266,7 +266,7 @@ TEST_F(MasterTest, ConcurrentExtendOnlyOneSucceeds) {
     Status s = ExtendSession(handle, def_1, initial_version, &new_version);
     EXPECT_TRUE(s.ok() || errors::IsAborted(s));
     {
-      mutex_lock l(mu);
+      mutex_lock l(mu, __PRETTY_FUNCTION__);
       if (s.ok()) {
         ++succeeded;
       } else {

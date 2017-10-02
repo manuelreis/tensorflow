@@ -31,7 +31,7 @@ CostModelManager::~CostModelManager() {
 }
 
 CostModel* CostModelManager::FindOrCreateCostModel(const Graph* graph) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   auto it = cost_models_.find(graph);
   if (it != cost_models_.end()) {
     return it->second;
@@ -43,7 +43,7 @@ CostModel* CostModelManager::FindOrCreateCostModel(const Graph* graph) {
 }
 
 bool CostModelManager::RemoveCostModelForGraph(const Graph* graph) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   auto itr = cost_models_.find(graph);
   if (itr == cost_models_.end()) {
     return false;
@@ -55,7 +55,7 @@ bool CostModelManager::RemoveCostModelForGraph(const Graph* graph) {
 
 Status CostModelManager::AddToCostGraphDef(const Graph* graph,
                                            CostGraphDef* cost_graph) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   // Get the cost model for the graph.
   auto it = cost_models_.find(graph);
   if (it == cost_models_.end()) {

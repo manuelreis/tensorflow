@@ -207,7 +207,7 @@ TEST_F(LocalRendezvousTest, RandomSendRecv) {
       EXPECT_EQ(strings::StrCat(i), V(val));
       bool done = false;
       {
-        mutex_lock l(state.lock);
+        mutex_lock l(state.lock, __PRETTY_FUNCTION__);
         state.counter--;
         if (state.counter == 0) {
           done = true;

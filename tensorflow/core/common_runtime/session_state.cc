@@ -21,7 +21,7 @@ namespace tensorflow {
 const char* SessionState::kTensorHandleResourceTypeName = "TensorHandle";
 
 Status SessionState::GetTensor(const string& handle, Tensor* tensor) {
-  mutex_lock l(state_lock_);
+  mutex_lock l(state_lock_, __PRETTY_FUNCTION__);
   auto it = tensors_.find(handle);
   if (it == tensors_.end()) {
     return errors::InvalidArgument("The tensor with handle '", handle,
@@ -32,7 +32,7 @@ Status SessionState::GetTensor(const string& handle, Tensor* tensor) {
 }
 
 Status SessionState::AddTensor(const string& handle, const Tensor& tensor) {
-  mutex_lock l(state_lock_);
+  mutex_lock l(state_lock_, __PRETTY_FUNCTION__);
   if (!tensors_.insert({handle, tensor}).second) {
     return errors::InvalidArgument("Failed to add a tensor with handle '",
                                    handle, "' to the session store.");
@@ -41,7 +41,7 @@ Status SessionState::AddTensor(const string& handle, const Tensor& tensor) {
 }
 
 Status SessionState::DeleteTensor(const string& handle) {
-  mutex_lock l(state_lock_);
+  mutex_lock l(state_lock_, __PRETTY_FUNCTION__);
   if (tensors_.erase(handle) == 0) {
     return errors::InvalidArgument("Failed to delete a tensor with handle '",
                                    handle, "' in the session store.");
@@ -50,12 +50,12 @@ Status SessionState::DeleteTensor(const string& handle) {
 }
 
 int64 SessionState::GetNewId() {
-  mutex_lock l(state_lock_);
+  mutex_lock l(state_lock_, __PRETTY_FUNCTION__);
   return tensor_id_++;
 }
 
 Status TensorStore::AddTensor(const string& name, const TensorAndKey& tk) {
-  mutex_lock l(lock_);
+  mutex_lock l(lock_, __PRETTY_FUNCTION__);
   if (!tensors_.insert({name, tk}).second) {
     return errors::InvalidArgument("Failed to add a tensor with name '", name,
                                    "' to the tensor store.");
@@ -65,7 +65,7 @@ Status TensorStore::AddTensor(const string& name, const TensorAndKey& tk) {
 
 Status TensorStore::SaveTensors(const std::vector<string>& output_names,
                                 SessionState* session_state) {
-  mutex_lock l(lock_);
+  mutex_lock l(lock_, __PRETTY_FUNCTION__);
   if (tensors_.size() != 0) {
     // Save only the tensors in output_names in the session.
     for (const string& name : output_names) {

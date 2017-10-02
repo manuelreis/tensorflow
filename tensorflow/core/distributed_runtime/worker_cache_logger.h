@@ -50,7 +50,7 @@ class WorkerCacheLogger {
   // Return true if there is any outstanding request for logging on
   // the RPC channels.
   bool LoggingActive() {
-    mutex_lock l(count_mu_);
+    mutex_lock l(count_mu_, __PRETTY_FUNCTION__);
     return want_logging_count_ > 0;
   }
 

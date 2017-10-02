@@ -35,7 +35,7 @@ Status ConditionalAccumulatorBase::MatchesNodeDef(const NodeDef& node_def) {
  * provided time step.
  */
 Status ConditionalAccumulatorBase::SetGlobalStep(int64 new_global_step) {
-  mutex_lock lock(mu_);
+  mutex_lock lock(mu_, __PRETTY_FUNCTION__);
   if (new_global_step < current_global_step_) {
     LOG(WARNING) << "Attempt to set current_global_step_ to smaller value: "
                  << "current_global_step_ = " << current_global_step_
@@ -68,7 +68,7 @@ void ConditionalAccumulatorBase::TryTakeGrad(int num_required,
     CancellationToken token = cm->get_cancellation_token();
     bool already_cancelled;
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       already_cancelled = !cm->RegisterCallback(
           token, [this, cm, token]() { Cancel(cm, token); });
       if (!already_cancelled) {
@@ -106,7 +106,7 @@ void ConditionalAccumulatorBase::Cancel(
     CancellationManager* cancellation_manager, CancellationToken token) {
   DoneCallback callback = nullptr;
   {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
 
     for (Attempt& attempt : takegrad_attempts_) {
       if (attempt.cancellation_manager == cancellation_manager &&
@@ -164,7 +164,7 @@ void ConditionalAccumulatorBase::FlushUnlocked() {
   std::vector<CleanUp> clean_up;
   Ref();
   {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     bool changed;
     do {
       changed = TryAttemptLocked(&clean_up);

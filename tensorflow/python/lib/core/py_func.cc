@@ -36,7 +36,7 @@ static PyObject* py_trampoline GUARDED_BY(mu) = nullptr;
 // Returns the py_trampoline that is used to pass the control to the
 // python runtime.
 PyObject* GetPyTrampoline() {
-  mutex_lock l(mu);
+  mutex_lock l(mu, __PRETTY_FUNCTION__);
   return py_trampoline;
 }
 
@@ -368,7 +368,7 @@ Status ConvertTensorToNdarray(const Tensor& t, PyObject** ret) {
 }
 
 void InitializePyTrampoline(PyObject* trampoline) {
-  mutex_lock l(mu);
+  mutex_lock l(mu, __PRETTY_FUNCTION__);
   if (py_trampoline == nullptr) {
     py_trampoline = trampoline;
     Py_INCREF(py_trampoline);

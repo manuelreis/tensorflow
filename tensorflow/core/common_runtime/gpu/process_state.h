@@ -142,12 +142,12 @@ class RecordingAllocator : public Allocator {
   string Name() override { return a_->Name(); }
   void* AllocateRaw(size_t alignment, size_t num_bytes) override {
     void* p = a_->AllocateRaw(alignment, num_bytes);
-    mutex_lock l(*mu_);
+    mutex_lock l(*mu_, __PRETTY_FUNCTION__);
     (*mm_)[p] = md_;
     return p;
   }
   void DeallocateRaw(void* p) override {
-    mutex_lock l(*mu_);
+    mutex_lock l(*mu_, __PRETTY_FUNCTION__);
     auto iter = mm_->find(p);
     mm_->erase(iter);
     a_->DeallocateRaw(p);

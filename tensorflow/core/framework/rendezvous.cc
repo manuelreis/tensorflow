@@ -157,7 +157,7 @@ class LocalRendezvousImpl : public Rendezvous {
     uint64 key_hash = KeyHash(key.FullKey());
     VLOG(2) << "Send " << this << " " << key_hash << " " << key.FullKey();
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       if (!status_.ok()) {
         return status_;
       }
@@ -224,7 +224,7 @@ class LocalRendezvousImpl : public Rendezvous {
                  DoneCallback done) override {
     uint64 key_hash = KeyHash(key.FullKey());
     VLOG(2) << "Recv " << this << " " << key_hash << " " << key.FullKey();
-    mu_.lock();
+    mu_.lock(__PRETTY_FUNCTION__);
     if (!status_.ok()) {
       // Rendezvous has been aborted.
       Status s = status_;
@@ -290,7 +290,7 @@ class LocalRendezvousImpl : public Rendezvous {
     CHECK(!status.ok());
     std::vector<Item*> items;
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       if (!status_.ok()) return;
       status_ = status;
       items.reserve(table_.size());

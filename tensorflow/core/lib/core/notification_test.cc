@@ -63,7 +63,7 @@ TEST(NotificationTest, TestMultipleThreadsWaitingOnNotification) {
   for (int i = 0; i < num_closures; ++i) {
     thread_pool->Schedule([&n, &lock, &counter] {
       n.WaitForNotification();
-      mutex_lock l(lock);
+      mutex_lock l(lock, __PRETTY_FUNCTION__);
       ++counter;
     });
   }

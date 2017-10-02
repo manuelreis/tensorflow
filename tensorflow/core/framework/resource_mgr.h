@@ -407,7 +407,7 @@ Status GetResourceFromContext(OpKernelContext* ctx, const string& input_name,
   {
     mutex* mu;
     TF_RETURN_IF_ERROR(ctx->input_ref_mutex(input_name, &mu));
-    mutex_lock l(*mu);
+    mutex_lock l(*mu, __PRETTY_FUNCTION__);
     Tensor tensor;
     TF_RETURN_IF_ERROR(ctx->mutable_input(input_name, &tensor, true));
     if (tensor.NumElements() != 2) {

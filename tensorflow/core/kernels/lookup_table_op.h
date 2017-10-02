@@ -48,7 +48,7 @@ class LookupTableOp : public OpKernel {
 
   // ctx is not owned by this function.
   void Compute(OpKernelContext* ctx) override {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (!table_handle_set_) {
       OP_REQUIRES_OK(ctx, cinfo_.Init(ctx->resource_manager(), def(),
                                       use_node_name_sharing_));

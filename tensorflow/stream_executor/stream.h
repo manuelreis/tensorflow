@@ -1659,7 +1659,7 @@ class Stream {
   friend class ocl::CLBlas;    // for parent_.
 
   bool InErrorState() const {
-    shared_lock lock{mu_};
+    shared_lock lock{mu_, __PRETTY_FUNCTION__};
     return !ok_;
   }
 
@@ -1669,7 +1669,7 @@ class Stream {
     if (operation_retcode) {
       return;
     }
-    mutex_lock lock{mu_};
+    mutex_lock lock{mu_, __PRETTY_FUNCTION__};
     ok_ = false;
   }
 

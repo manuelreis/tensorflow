@@ -94,7 +94,7 @@ void EventMgr::StopPollingLoop() {
 
 void EventMgr::ThenDeleteTensors(perftools::gputools::Stream* stream,
                                  const TensorReferenceVector& tensors) {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   // TODO(jeff): We currently keep one accumulated_tensors_ object.
   // If we start to use multiple streams heavily, we might want to keep
   // separate vectors/byte counters per stream
@@ -131,14 +131,14 @@ void EventMgr::PollLoop() {
   bool queue_empty = false;
   while (!stop_polling_->HasBeenNotified()) {
     if (queue_empty) {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       WaitForMilliseconds(&l, &events_pending_, polling_inactive_delay_msecs_);
     } else {
       Env::Default()->SleepForMicroseconds(polling_active_delay_usecs_);
     }
     ToFreeVector to_free;
     {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       PollEvents(true, &to_free);
       queue_empty = used_events_.empty();
     }

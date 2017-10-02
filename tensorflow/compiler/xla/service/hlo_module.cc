@@ -282,7 +282,7 @@ std::list<HloComputation*> HloModule::MakeComputationPostOrder() const {
 }
 
 uint64 HloModule::RandomNew64() const {
-  tensorflow::mutex_lock l(rng_mutex_);
+  tensorflow::mutex_lock l(rng_mutex_, __PRETTY_FUNCTION__);
   return rng_();
 }
 

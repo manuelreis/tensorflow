@@ -76,7 +76,7 @@ Status SingleMachine::Provision() {
 }
 
 Status SingleMachine::Initialize(const GrapplerItem& item) {
-  mutex_lock l(this->last_graph_mu_);
+  mutex_lock l(this->last_graph_mu_, __PRETTY_FUNCTION__);
   if (last_graph_ != &item.graph || last_graph_id_ != item.id) {
     init_ops_ = item.init_ops;
     last_graph_ = nullptr;
@@ -91,7 +91,7 @@ Status SingleMachine::Run(const GraphDef& graph_def,
                           const std::vector<string>& fetch,
                           RunMetadata* metadata) {
   {
-    mutex_lock l(this->last_graph_mu_);
+    mutex_lock l(this->last_graph_mu_, __PRETTY_FUNCTION__);
     if (last_graph_ != &graph_def) {
       TF_RETURN_IF_ERROR(ResetSession());
       TF_RETURN_IF_ERROR(session_->Create(graph_def));
@@ -140,7 +140,7 @@ Status SingleMachine::RunWithTimeout(
     const std::vector<string>& fetch, RunMetadata* run_metadata) {
   // We shouldn't be running or closing the session at this point.
   {
-    mutex_lock l(close_mu_);
+    mutex_lock l(close_mu_, __PRETTY_FUNCTION__);
     CHECK(!closing_);
   }
   auto status = std::make_shared<Status>();
@@ -166,7 +166,7 @@ Status SingleMachine::CloseSession(bool use_timeout) {
   }
 
   {
-    mutex_lock l(close_mu_);
+    mutex_lock l(close_mu_, __PRETTY_FUNCTION__);
 
     if (!closing_) {
       closing_ = true;
@@ -190,7 +190,7 @@ Status SingleMachine::CloseSession(bool use_timeout) {
           this->session_->Close().IgnoreError();
         }
 
-        mutex_lock l2(close_mu_);
+        mutex_lock l2(close_mu_, __PRETTY_FUNCTION__);
         closing_ = false;
       },
       use_timeout ? timeout_s_ * 1000 : -1, thread_pool_.get());

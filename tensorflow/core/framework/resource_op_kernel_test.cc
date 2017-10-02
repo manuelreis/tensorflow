@@ -55,7 +55,7 @@ class StubResourceOpKernel : public ResourceOpKernel<StubResource> {
   using ResourceOpKernel::ResourceOpKernel;
 
   StubResource* resource() LOCKS_EXCLUDED(mu_) {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     return resource_;
   }
 

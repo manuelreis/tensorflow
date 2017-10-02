@@ -37,19 +37,19 @@ Coordinator::~Coordinator() {
 
 Status Coordinator::RegisterRunner(std::unique_ptr<RunnerInterface> runner) {
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (should_stop_) {
       return Status(error::FAILED_PRECONDITION,
                     "The coordinator has been stopped.");
     }
   }
-  mutex_lock l(runners_lock_);
+  mutex_lock l(runners_lock_, __PRETTY_FUNCTION__);
   runners_.push_back(std::move(runner));
   return Status::OK();
 }
 
 bool Coordinator::AllRunnersStopped() {
-  mutex_lock l(runners_lock_);
+  mutex_lock l(runners_lock_, __PRETTY_FUNCTION__);
   for (const auto& runner : runners_) {
     if (runner->IsRunning()) {
       return false;
@@ -59,7 +59,7 @@ bool Coordinator::AllRunnersStopped() {
 }
 
 Status Coordinator::RequestStop() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   if (should_stop_) {
     return Status(error::FAILED_PRECONDITION,
                   "The Coordinator is not running.");
@@ -70,14 +70,14 @@ Status Coordinator::RequestStop() {
 }
 
 bool Coordinator::ShouldStop() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   return should_stop_;
 }
 
 Status Coordinator::Join() {
   // TODO(yuefengz): deal with stragglers.
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     if (!should_stop_) {
       return Status(error::FAILED_PRECONDITION,
                     "Joining coordinator without requesting to stop.");
@@ -85,7 +85,7 @@ Status Coordinator::Join() {
   }
 
   {
-    mutex_lock l(runners_lock_);
+    mutex_lock l(runners_lock_, __PRETTY_FUNCTION__);
     for (const auto& t : runners_) {
       ReportStatus(t->Join());
     }
@@ -95,7 +95,7 @@ Status Coordinator::Join() {
 }
 
 void Coordinator::ReportStatus(const Status& status) {
-  mutex_lock l(status_lock_);
+  mutex_lock l(status_lock_, __PRETTY_FUNCTION__);
   if (status.ok() || !status_.ok() ||
       clean_stop_errors_.count(static_cast<int>(status.code())) > 0) {
     return;
@@ -104,12 +104,12 @@ void Coordinator::ReportStatus(const Status& status) {
 }
 
 Status Coordinator::GetStatus() {
-  mutex_lock l(status_lock_);
+  mutex_lock l(status_lock_, __PRETTY_FUNCTION__);
   return status_;
 }
 
 void Coordinator::WaitForStop() {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   while (!should_stop_) {
     wait_for_stop_.wait(l);
   }
@@ -118,7 +118,7 @@ void Coordinator::WaitForStop() {
 Status Coordinator::ExportCostGraph(CostGraphDef* cost_graph) const {
   RunMetadata tmp_metadata;
   {
-    mutex_lock l(runners_lock_);
+    mutex_lock l(runners_lock_, __PRETTY_FUNCTION__);
     for (auto& t : runners_) {
       Status s = t->ExportRunMetadata(&tmp_metadata);
       if (!s.ok()) {

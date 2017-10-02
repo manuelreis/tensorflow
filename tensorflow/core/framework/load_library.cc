@@ -51,7 +51,7 @@ Status LoadLibrary(const char* library_filename, void** result,
   Library library;
   std::unordered_set<string> seen_op_names;
   {
-    mutex_lock lock(mu);
+    mutex_lock lock(mu, __PRETTY_FUNCTION__);
     if (loaded_libs.find(library_filename) != loaded_libs.end()) {
       library = loaded_libs[library_filename];
     } else {

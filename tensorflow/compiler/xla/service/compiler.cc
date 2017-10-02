@@ -56,7 +56,7 @@ Compiler::GetPlatformCompilers() {
     se::Platform::Id platform_id,
     std::function<std::unique_ptr<Compiler>()> compiler_factory) {
   LazyInitMutex();
-  tensorflow::mutex_lock lock(*platform_compiler_mutex_);
+  tensorflow::mutex_lock lock(*platform_compiler_mutex_, __PRETTY_FUNCTION__);
   auto* factories = GetPlatformCompilerFactories();
   CHECK(factories->find(platform_id) == factories->end());
   (*factories)[platform_id] = std::move(compiler_factory);
@@ -65,7 +65,7 @@ Compiler::GetPlatformCompilers() {
 /* static */ StatusOr<Compiler*> Compiler::GetForPlatform(
     const se::Platform* platform) {
   LazyInitMutex();
-  tensorflow::mutex_lock lock(*platform_compiler_mutex_);
+  tensorflow::mutex_lock lock(*platform_compiler_mutex_, __PRETTY_FUNCTION__);
 
   auto* compilers = GetPlatformCompilers();
   // See if we already instantiated a compiler for this platform.

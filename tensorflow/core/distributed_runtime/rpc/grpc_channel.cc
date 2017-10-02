@@ -103,7 +103,7 @@ class CachingGrpcChannelCache : public GrpcChannelCache {
   SharedGrpcChannelPtr FindWorkerChannel(const string& target) override {
     SharedGrpcChannelPtr ch = nullptr;
     {
-      mutex_lock l(mu_);  // could use reader lock
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);  // could use reader lock
       ch = gtl::FindPtrOrNull(channels_, target);
       if (ch) {
         return ch;
@@ -111,7 +111,7 @@ class CachingGrpcChannelCache : public GrpcChannelCache {
     }
     ch = FindChannelOnce(target);
     if (ch) {
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       channels_.insert({target, ch});
     }
     return ch;
@@ -149,7 +149,7 @@ class MultiGrpcChannelCache : public CachingGrpcChannelCache {
   }
 
   string TranslateTask(const string& target) override {
-    mutex_lock l(mu_);  // could use reader lock
+    mutex_lock l(mu_ , __PRETTY_FUNCTION__);  // could use reader lock
     GrpcChannelCache* cache = gtl::FindPtrOrNull(target_caches_, target);
     if (cache == nullptr) {
       for (GrpcChannelCache* c : caches_) {
@@ -171,7 +171,7 @@ class MultiGrpcChannelCache : public CachingGrpcChannelCache {
     for (GrpcChannelCache* cache : caches_) {
       SharedGrpcChannelPtr ch(cache->FindWorkerChannel(target));
       if (ch) {
-        mutex_lock l(mu_);
+        mutex_lock l(mu_, __PRETTY_FUNCTION__);
         target_caches_.insert({target, cache});
         return ch;
       }

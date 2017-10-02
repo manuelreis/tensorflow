@@ -199,7 +199,7 @@ TensorSliceReader::~TensorSliceReader() { gtl::STLDeleteValues(&tensors_); }
 
 bool TensorSliceReader::HasTensor(const string& name, TensorShape* shape,
                                   DataType* type) const {
-  mutex_lock l(mu_);
+  mutex_lock l(mu_, __PRETTY_FUNCTION__);
   const TensorSliceSet* tss = gtl::FindPtrOrNull(tensors_, name);
   if (!tss && !all_shards_loaded_) {
     VLOG(1) << "Did not find tensor in preferred shard, loading all shards: "
@@ -226,7 +226,7 @@ Status TensorSliceReader::GetTensor(
   TensorShape shape;
   TensorSlice slice;
   {
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     const TensorSliceSet* tss = gtl::FindPtrOrNull(tensors_, name);
     if (tss == nullptr) {
       return errors::NotFound(name, " not found in checkpoint file");

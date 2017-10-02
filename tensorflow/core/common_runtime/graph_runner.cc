@@ -58,7 +58,7 @@ class SimpleRendezvous : public Rendezvous {
       return errors::Internal("Send of a dead tensor");
     }
 
-    mutex_lock l(mu_);
+    mutex_lock l(mu_, __PRETTY_FUNCTION__);
     string edge_name = parsed.edge_name.ToString();
     if (table_.count(edge_name) > 0) {
       return errors::Internal("Send of an already sent tensor");
@@ -73,7 +73,7 @@ class SimpleRendezvous : public Rendezvous {
     Status status = Status::OK();
     {
       string key = parsed.edge_name.ToString();
-      mutex_lock l(mu_);
+      mutex_lock l(mu_, __PRETTY_FUNCTION__);
       if (table_.count(key) <= 0) {
         status = errors::Internal("Did not find key ", key);
       } else {

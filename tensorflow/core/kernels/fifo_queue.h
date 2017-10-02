@@ -49,7 +49,7 @@ class FIFOQueue : public TypedQueue<std::deque<PersistentTensor> > {
   Status MatchesNodeDef(const NodeDef& node_def) override;
 
   int32 size() override {
-    mutex_lock lock(mu_);
+    mutex_lock lock(mu_, __PRETTY_FUNCTION__);
     return queues_[0].size();
   }
 
