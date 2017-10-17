@@ -39,7 +39,7 @@ REQUIRED_PACKAGES = [
     'tensorflow-tensorboard >= 0.4.0rc1, < 0.5.0',
 ]
 
-project_name = 'tensorflow'
+project_name = 'tensorflow-lastreleasehtm'
 if '--project_name' in sys.argv:
   project_name_idx = sys.argv.index('--project_name')
   project_name = sys.argv[project_name_idx + 1]

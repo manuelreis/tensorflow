@@ -453,6 +453,7 @@ class Tensor {
   void UnsafeCopyFromInternal(const Tensor&, DataType dtype,
                               const TensorShape&);
 
+  TensorBuffer* buf_;
  private:
   // Returns true if the refcount on buf_ and any possible underlying root
   // buffer is one.
@@ -473,7 +474,6 @@ class Tensor {
       gtl::ArraySlice<int64> orig, int64 num_out_dims);
 
   TensorShape shape_;
-  TensorBuffer* buf_;
 
   friend class DMAHelper;
   friend class TensorCApi;

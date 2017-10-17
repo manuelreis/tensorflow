@@ -67,6 +67,13 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/util/util.h"
 
+#include "tm.h"
+
+
+__thread int htm_budget;
+__thread int local_thread_id;
+__attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
+
 namespace tensorflow {
 
 REGISTER_RESOURCE_HANDLE_KERNEL(Var);
@@ -368,6 +375,7 @@ class ResourceGatherOp : public OpKernel {
   explicit ResourceGatherOp(OpKernelConstruction* c) : OpKernel(c) {}
 
   void Compute(OpKernelContext* c) override {
+    TM_SHUTDOWN();
     Var* v = nullptr;
     OP_REQUIRES_OK(c, LookupResource(c, HandleFromInput(c, 0), &v));
     // NOTE: We hold the lock for the whole gather operation instead

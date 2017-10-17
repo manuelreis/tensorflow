@@ -1758,10 +1758,18 @@ tf_kernel_library(
     ],
 )
 
+
+cc_inc_library(
+    name = "htm",
+    hdrs = ["tm.h"]
+)
+
 tf_kernel_library(
     name = "resource_variable_ops",
     srcs = ["resource_variable_ops.cc"],
+    copts = ["-mrtm"],
     deps = [
+        "htm",
         ":bounds_check",
         ":dense_update_functor",
         ":gather_functor",
@@ -3753,6 +3761,7 @@ STATE_DEPS = [
     "//tensorflow/core:framework",
     "//tensorflow/core:lib",
     "//tensorflow/core:state_ops_op_lib",
+    "htm",
 ] + if_sycl(["//tensorflow/core:sycl_runtime"])
 
 tf_kernel_library(
@@ -3902,10 +3911,13 @@ tf_kernel_library(
     deps = STRING_DEPS,
 )
 
+
 tf_kernel_library(
     name = "training_ops",
     prefix = "training_ops",
+    copts = ["-mrtm"],
     deps = [
+        "htm",
         ":bounds_check",
         ":training_op_helpers",
         ":variable_ops",

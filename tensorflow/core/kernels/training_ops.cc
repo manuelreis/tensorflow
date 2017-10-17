@@ -23,9 +23,13 @@ limitations under the License.
 #include "tensorflow/core/kernels/training_op_helpers.h"
 #include "tensorflow/core/kernels/variable_ops.h"
 
+#include "tm.h"
+#include <cmath>
+
 #ifdef TENSORFLOW_USE_SYCL
 #include "tensorflow/core/common_runtime/sycl/sycl_util.h"
 #endif  // TENSORFLOW_USE_SYCL
+
 
 namespace tensorflow {
 
@@ -371,8 +375,8 @@ class ApplyGradientDescentOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* ctx) override {
-    auto locks =
-        MaybeLockVariableInputMutexesInOrder(ctx, use_exclusive_lock_, {0});
+    //auto locks =
+    //    MaybeLockVariableInputMutexesInOrder(ctx, use_exclusive_lock_, {0});
     Tensor var;
     OP_REQUIRES_OK(ctx, GetInputTensorFromVariable<Device, T>(
                             ctx, 0, use_exclusive_lock_, false, &var));
@@ -393,8 +397,25 @@ class ApplyGradientDescentOp : public OpKernel {
                                 delta.shape().DebugString()));
 
     const Device& device = ctx->template eigen_device<Device>();
-    functor::ApplyGradientDescent<Device, T>()(
-        device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
+
+    local_thread_id = 0;
+    htm_budget = HTM_RETRIES;
+    mutex *mutex = GetTrainingVariableMutex(ctx, 0);
+
+    float *var_pointer = (float*) var.buf_->data();
+    float *alpha_pointer = (float*) alpha.buf_->data();
+    float *delta_pointer = (float*) delta.buf_->data();
+    auto size_tensor = var.NumElements();
+    TM_BEGIN(mutex);
+
+    
+    for(int i=0; i < size_tensor; i++) {
+        var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
+    }
+
+    //functor::ApplyGradientDescent<Device, T>()(
+    //    device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
+    TM_END(mutex);
 
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
@@ -2520,11 +2541,63 @@ class ApplyAdamOp : public OpKernel {
                                 grad.shape().DebugString()));
 
     const Device& device = ctx->template eigen_device<Device>();
-    functor::ApplyAdam<Device, T>()(
+
+    htm_budget = HTM_RETRIES;
+    mutex *mutex1 = GetTrainingVariableMutex(ctx, 0); 
+    mutex *mutex2 = GetTrainingVariableMutex(ctx, 1); 
+    mutex *mutex3 = GetTrainingVariableMutex(ctx, 2); 
+    
+    auto size_var = var.NumElements();
+    auto size_m = m.NumElements();
+    auto size_v = v.NumElements();
+    auto size_grad = grad.NumElements();
+   
+    float *lr_pointer = (float*) lr.buf_->data();
+    float *beta2_power_pointer = (float*) beta2_power.buf_->data();
+    float *beta2_pointer = (float*) beta2.buf_->data();
+    float *beta1_power_pointer = (float*) beta1_power.buf_->data();
+    float *beta1_pointer = (float*) beta1.buf_->data();
+    float *epsilon_pointer = (float*) epsilon.buf_->data();
+    float *var_pointer = (float*) var.buf_->data();
+    float *v_pointer = (float*) v.buf_->data();
+    float *grad_pointer = (float*) grad.buf_->data();
+    float *m_pointer = (float*) m.buf_->data();
+
+
+    const float alpha = *lr_pointer * std::sqrt(1 - *beta2_power_pointer) /
+                        (1 - *beta1_power_pointer); 
+    
+    /*float m_2[size_m];
+    float v_2[size_v];
+    float var_2[size_var];*/
+    
+    local_thread_id = 0;
+    TM_BEGIN_ADAM(mutex1, mutex2, mutex3)
+    for(int i=0; i < size_m; i++) {
+    	m_pointer[i] += (grad_pointer[i] - m_pointer[i]) * (1 - *beta1_pointer);
+    }
+
+    for(int i=0; i < size_v; i++) {
+	    v_pointer[i] += (grad_pointer[i] * grad_pointer[i] - v_pointer[i]) *
+                        (1 - *beta2_pointer); 
+    }
+
+    for(int i=0; i < size_var; i++) {
+	   var_pointer[i] -= (m_pointer[i] * alpha) /
+                          std::sqrt(v_pointer[i] + *epsilon_pointer);
+    }
+
+    
+//    std::memcpy(m_pointer, m_2, size_m);
+//    std::memcpy(v_pointer, v_2, size_v);
+//    std::memcpy(var_pointer, v_pointer, size_var);
+
+    TM_END_ADAM(mutex1, mutex2, mutex3)
+    /*functor::ApplyAdam<Device, T>()(
         device, var.flat<T>(), m.flat<T>(), v.flat<T>(),
         beta1_power.scalar<T>(), beta2_power.scalar<T>(), lr.scalar<T>(),
         beta1.scalar<T>(), beta2.scalar<T>(), epsilon.scalar<T>(),
-        grad.flat<T>(), use_nesterov_);
+        grad.flat<T>(), use_nesterov_);*/
 
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
   }
