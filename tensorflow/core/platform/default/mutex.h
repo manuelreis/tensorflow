@@ -36,53 +36,38 @@ enum LinkerInitialized { LINKER_INITIALIZED };
 // lock.
 class LOCKABLE mutex {
  public:
-  mutex() : locked_(false) { nsync::nsync_mu_init(&mu_); }
+  mutex() { nsync::nsync_mu_init(&mu_); }
   // The default implementation of nsync_mutex is safe to use after the linker
   // initializations
   explicit mutex(LinkerInitialized x) {}
 
   void lock() EXCLUSIVE_LOCK_FUNCTION() { 
       nsync::nsync_mu_lock(&mu_); 
-      locked_ = true;
   }
   bool try_lock() EXCLUSIVE_TRYLOCK_FUNCTION(true) {
-
-    bool success =  nsync::nsync_mu_trylock(&mu_) != 0;
-    if (success) {
-        locked_ = true;
-    }
-    return success;
+    return  nsync::nsync_mu_trylock(&mu_) != 0;
   };
   void unlock() UNLOCK_FUNCTION() { 
-      locked_ = false;
       nsync::nsync_mu_unlock(&mu_); 
   }
 
   void lock_shared() SHARED_LOCK_FUNCTION() { 
       nsync::nsync_mu_rlock(&mu_); 
-      locked_ = true;
   }
   
   bool try_lock_shared() SHARED_TRYLOCK_FUNCTION(true) {
-    bool success = nsync::nsync_mu_rtrylock(&mu_) != 0;
-    if (success) {
-        locked_ = true;
-    }
-    return success;
-  };
-
+    return nsync::nsync_mu_rtrylock(&mu_) != 0;
+  }
   void unlock_shared() UNLOCK_FUNCTION() { 
-      locked_ = false;
       nsync::nsync_mu_runlock(&mu_); 
   }
 
   bool is_locked() {
-    return locked_;
+    return mu_.word != 0;
   }
  private:
   friend class condition_variable;
   nsync::nsync_mu mu_;
-  bool locked_;
 };
 
 // Mimic a subset of the std::unique_lock<tensorflow::mutex> functionality.

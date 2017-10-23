@@ -120,7 +120,7 @@ extern __thread int local_thread_id;
 # define TM_BEGIN(mutex) { \
         while (1) { \
             while (IS_LOCKED(mutex)) { \
-                __asm__ ( "pause;"); \
+                __asm volatile ("" : : : "memory"); \
             } \
             unsigned int status = _xbegin(); \
             if (status == _XBEGIN_STARTED) { \
@@ -156,8 +156,10 @@ extern __thread int local_thread_id;
             } \
             stats_array[local_thread_id].aborts++; \
             if (htm_budget <= 0) {   \
-		mutex->lock(); \
-		break; \
+		        while(!mutex->try_lock()) { \
+                  __asm volatile ("" : : : "memory"); \
+                } \
+		        break; \
             } \
         } \
 };

@@ -22,7 +22,8 @@ limitations under the License.
 #include "tensorflow/core/kernels/bounds_check.h"
 #include "tensorflow/core/kernels/training_op_helpers.h"
 #include "tensorflow/core/kernels/variable_ops.h"
-
+#include <iostream>
+#include <thread>      
 #include "tm.h"
 #include <cmath>
 
@@ -377,6 +378,7 @@ class ApplyGradientDescentOp : public OpKernel {
   void Compute(OpKernelContext* ctx) override {
     //auto locks =
     //    MaybeLockVariableInputMutexesInOrder(ctx, use_exclusive_lock_, {0});
+
     Tensor var;
     OP_REQUIRES_OK(ctx, GetInputTensorFromVariable<Device, T>(
                             ctx, 0, use_exclusive_lock_, false, &var));
@@ -398,26 +400,29 @@ class ApplyGradientDescentOp : public OpKernel {
 
     const Device& device = ctx->template eigen_device<Device>();
 
-    local_thread_id = 0;
+    //local_thread_id = 0;
     htm_budget = HTM_RETRIES;
     mutex *mutex = GetTrainingVariableMutex(ctx, 0);
-
     float *var_pointer = (float*) var.buf_->data();
     float *alpha_pointer = (float*) alpha.buf_->data();
     float *delta_pointer = (float*) delta.buf_->data();
     auto size_tensor = var.NumElements();
+    //std::cout << std::this_thread::get_id() << "before tm_begin\n" << std::flush;
     TM_BEGIN(mutex);
 
+    //mutex->lock();
     
     for(int i=0; i < size_tensor; i++) {
         var_pointer[i] -= delta_pointer[i] * *alpha_pointer;
     }
 
+    //mutex->unlock();
     //functor::ApplyGradientDescent<Device, T>()(
     //    device, var.flat<T>(), alpha.scalar<T>(), delta.flat<T>());
     TM_END(mutex);
-
+    //std::cout << std::this_thread::get_id() << "after tm_end, before forward\n" << std::flush;
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
+    //std::cout << std::this_thread::get_id() << "after forward\n" << std::flush;
   }
 
  private:
