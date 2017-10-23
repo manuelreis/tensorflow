@@ -414,12 +414,19 @@ cc_library(
     ],
 )
 
+cc_inc_library(
+    name = "htm",
+    hdrs = ["tm.h"]
+)
+
 cc_library(
     name = "training_op_helpers",
     srcs = ["training_op_helpers.cc"],
     hdrs = ["training_op_helpers.h"],
     visibility = [":friends"],
+    copts = ["-mrtm"],
     deps = [
+        "htm",
         ":dense_update_functor",
         ":variable_ops",
         "//tensorflow/core:framework",
@@ -1759,10 +1766,6 @@ tf_kernel_library(
 )
 
 
-cc_inc_library(
-    name = "htm",
-    hdrs = ["tm.h"]
-)
 
 tf_kernel_library(
     name = "resource_variable_ops",

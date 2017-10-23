@@ -99,8 +99,14 @@ class ReadVariableOp : public OpKernel {
     // We're acquiring a reference to the underlying buffer while
     // holding a shared lock to guarantee ordering of reads and
     // writes.
-    tf_shared_lock ml(*variable->mu());
+    
+    //tf_shared_lock ml(*variable->mu());
+    local_thread_id = 0;
+    htm_budget = HTM_RETRIES;
+    mutex *mutex = variable->mu();
+    TM_BEGIN(mutex);
     const Tensor& t = *variable->tensor();
+    TM_END(mutex);
     OP_REQUIRES(
         ctx, dtype_ == t.dtype(),
         errors::InvalidArgument(

@@ -400,7 +400,7 @@ class ApplyGradientDescentOp : public OpKernel {
 
     const Device& device = ctx->template eigen_device<Device>();
 
-    //local_thread_id = 0;
+    local_thread_id = 0;
     htm_budget = HTM_RETRIES;
     mutex *mutex = GetTrainingVariableMutex(ctx, 0);
     float *var_pointer = (float*) var.buf_->data();
@@ -423,6 +423,7 @@ class ApplyGradientDescentOp : public OpKernel {
     //std::cout << std::this_thread::get_id() << "after tm_end, before forward\n" << std::flush;
     MaybeForwardRefInputToRefOutput(ctx, 0, 0);
     //std::cout << std::this_thread::get_id() << "after forward\n" << std::flush;
+    //mutex->unlock();
   }
 
  private:

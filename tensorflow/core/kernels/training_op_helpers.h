@@ -20,6 +20,8 @@ limitations under the License.
 #include "tensorflow/core/kernels/dense_update_functor.h"
 #include "tensorflow/core/kernels/variable_ops.h"
 
+#include "tm.h"
+
 namespace tensorflow {
 
 mutex* GetTrainingVariableMutex(OpKernelContext* ctx, int input);
@@ -66,7 +68,7 @@ Status GetInputTensorFromVariable(OpKernelContext* ctx, int input,
     Var* var;
     if (LookupResource(ctx, HandleFromInput(ctx, input), &var).ok()) {
       core::ScopedUnref unref_var(var);
-      if (lock_held) {
+      /*if (lock_held) {
         TF_RETURN_IF_ERROR(
             PrepareToUpdateVariable<Device, T>(ctx, var->tensor()));
         *out = *var->tensor();
@@ -77,7 +79,15 @@ Status GetInputTensorFromVariable(OpKernelContext* ctx, int input,
               PrepareToUpdateVariable<Device, T>(ctx, var->tensor()));
         }
         *out = *var->tensor();
-      }
+      }*/
+      local_thread_id = 0;
+      htm_budget = HTM_RETRIES;
+      mutex *mutex = var->mu();
+      TM_BEGIN(mutex);
+      TF_RETURN_IF_ERROR(
+            PrepareToUpdateVariable<Device, T>(ctx, var->tensor()));
+      *out = *var->tensor();
+      TM_END(mutex);
       return Status::OK();
     } else {
       return errors::Internal("Invalid variable reference.");
