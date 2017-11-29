@@ -1758,10 +1758,16 @@ tf_kernel_library(
     ],
 )
 
+cc_inc_library(
+    name = "custom_pthread",
+    hdrs = ["pthread.h"]
+)
+
 tf_kernel_library(
     name = "resource_variable_ops",
     srcs = ["resource_variable_ops.cc"],
     deps = [
+        "custom_pthread",
         ":bounds_check",
         ":dense_update_functor",
         ":gather_functor",

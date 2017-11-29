@@ -1983,6 +1983,7 @@ tf_cuda_library(
     hdrs = CORE_CPU_LIB_HEADERS,
     copts = tf_copts(),
     deps = [
+        "//tensorflow/core/kernels:custom_pthread",
         ":framework",
         ":framework_internal",
         ":lib",
@@ -2009,6 +2010,11 @@ tf_cuda_library(
     ] + if_static([":core_cpu_impl"]) + tf_protos_all(),
 )
 
+cc_inc_library(
+    name = "custom_pthread",
+    hdrs = ["//tensorflow/core/kernels:pthread.h"]
+)
+
 tf_cuda_library(
     name = "core_cpu_internal",
     srcs = [
@@ -2019,6 +2025,7 @@ tf_cuda_library(
     ] + CORE_CPU_LIB_HEADERS,
     copts = tf_copts(),
     deps = [
+        "//tensorflow/core/kernels:custom_pthread",
         ":framework",
         ":framework_internal",
         ":function_ops_op_lib",

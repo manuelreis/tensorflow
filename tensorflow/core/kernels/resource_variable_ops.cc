@@ -51,6 +51,10 @@ limitations under the License.
 #define EIGEN_USE_GPU
 #endif
 
+// (dleoni) Include pthread to stop measuring mutexes contention when
+// the resource variable is read
+#include "pthread.h"
+
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/register_types.h"
 #include "tensorflow/core/framework/resource_mgr.h"
@@ -368,6 +372,8 @@ class ResourceGatherOp : public OpKernel {
   explicit ResourceGatherOp(OpKernelConstruction* c) : OpKernel(c) {}
 
   void Compute(OpKernelContext* c) override {
+    // (dleoni) Print statistics about mutexes
+    pthread_print_mutexes();
     Var* v = nullptr;
     OP_REQUIRES_OK(c, LookupResource(c, HandleFromInput(c, 0), &v));
     // NOTE: We hold the lock for the whole gather operation instead
