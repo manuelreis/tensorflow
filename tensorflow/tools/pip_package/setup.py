@@ -41,7 +41,7 @@ REQUIRED_PACKAGES = [
     'bleach == 1.5.0',
 ]
 
-project_name = 'tensorflow_glibc_hle'
+project_name = 'tensorflow_mutexes_contention'
 if '--project_name' in sys.argv:
   project_name_idx = sys.argv.index('--project_name')
   project_name = sys.argv[project_name_idx + 1]

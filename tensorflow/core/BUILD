@@ -1464,6 +1464,11 @@ cc_library(
     deps = ["//tensorflow/core/platform/default/build_config:protos_cc"],
 )
 
+cc_inc_library(
+    name = "custom_pthread",
+    hdrs = ["//tensorflow/core/kernels:pthread.h"]
+)
+
 tf_cuda_library(
     name = "core_cpu_internal",
     srcs = glob(
@@ -1500,6 +1505,7 @@ tf_cuda_library(
     ),
     copts = tf_copts(),
     deps = [
+               "//tensorflow/core/kernels:custom_pthread",
                ":framework",
                ":framework_internal",
                ":function_ops_op_lib",

@@ -13,6 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+// (dleoni) Include pthread in order to trigger the measurement of the 
+// contention of mutexes
+
+#include "tensorflow/core/kernels/pthread.h"
+
 #include <string>
 
 #include "tensorflow/core/common_runtime/session_factory.h"
@@ -63,6 +68,9 @@ Session* NewSession(const SessionOptions& options) {
 
 Status NewSession(const SessionOptions& options, Session** out_session) {
   SessionFactory* factory;
+
+  // (dleoni) Start measuring contention of mutexes
+  pthread_measure_mutexes_contention();
   Status s = SessionFactory::GetFactory(options, &factory);
   if (!s.ok()) {
     *out_session = nullptr;

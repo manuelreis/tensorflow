@@ -15,6 +15,7 @@ limitations under the License.
 
 #define EIGEN_USE_THREADS
 
+#include "pthread.h"
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/register_types.h"
 #include "tensorflow/core/framework/resource_mgr.h"
@@ -313,6 +314,7 @@ class ResourceGatherOp : public OpKernel {
   explicit ResourceGatherOp(OpKernelConstruction* c) : OpKernel(c) {}
 
   void Compute(OpKernelContext* c) override {
+    pthread_print_mutexes();
     Var* v = nullptr;
     OP_REQUIRES_OK(c, LookupResource(c, HandleFromInput(c, 0), &v));
     mutex_lock ml(*v->mu());
