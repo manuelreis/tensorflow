@@ -1,4 +1,4 @@
-bazel build -c opt --copt="-L/home/dleoni/glibc-2.19_install/lib" --linkopt="-L/home/dleoni/glibc-2.19_install/lib" --linkopt="-rdynamic" -c dbg --verbose_failures --strip=never  //tensorflow/tools/pip_package:build_pip_package
+bazel build -c opt -c dbg --linkopt="-L/home/dleoni/glibc-2.19_install/lib" --verbose_failures --strip=never //tensorflow/tools/pip_package:build_pip_package
 rm -rf ~/tmp/tensorflow_pkg/
 bazel-bin/tensorflow/tools/pip_package/build_pip_package ~/tmp/tensorflow_pkg
 /usr/bin/yes | pip uninstall tensorflow

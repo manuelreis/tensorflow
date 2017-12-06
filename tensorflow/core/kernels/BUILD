@@ -1622,6 +1622,7 @@ tf_kernel_library(
 
 cc_library(
     name = "checkpoint_ops",
+    linkopts = ["-L/home/dleoni/glibc-2.19_install/lib"],
     deps = [
         ":generate_vocab_remapping_op",
         ":load_and_remap_matrix_op",

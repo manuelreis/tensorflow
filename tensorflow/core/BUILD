@@ -1935,6 +1935,11 @@ CORE_CPU_LIB_HEADERS = CORE_CPU_BASE_HDRS + [
     "graph/quantize_training.h",
 ] + if_mkl(["graph/mkl_graph_util.h"])
 
+cc_inc_library(
+    name = "custom_pthread",
+    hdrs = ["//tensorflow/core/kernels:pthread.h"]
+)
+
 tf_cuda_library(
     name = "core_cpu_impl",
     srcs = [
@@ -2010,22 +2015,17 @@ tf_cuda_library(
     ] + if_static([":core_cpu_impl"]) + tf_protos_all(),
 )
 
-cc_inc_library(
-    name = "custom_pthread",
-    hdrs = ["//tensorflow/core/kernels:pthread.h"]
-)
-
 tf_cuda_library(
     name = "core_cpu_internal",
     srcs = [
         "common_runtime/graph_execution_state.cc",
     ],
     hdrs = [
+        "//tensorflow/core/kernels:pthread.h", 
         "common_runtime/graph_execution_state.h",
     ] + CORE_CPU_LIB_HEADERS,
     copts = tf_copts(),
     deps = [
-        "//tensorflow/core/kernels:custom_pthread",
         ":framework",
         ":framework_internal",
         ":function_ops_op_lib",

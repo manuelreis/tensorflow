@@ -71,7 +71,7 @@ Status NewSession(const SessionOptions& options, Session** out_session) {
   SessionFactory* factory;
 
   // (dleoni) Start measuring contention of mutexes
-  pthread_measure_mutexes_contention();
+  pthread_print_mutexes();
   const Status s = SessionFactory::GetFactory(options, &factory);
   if (!s.ok()) {
     *out_session = nullptr;
