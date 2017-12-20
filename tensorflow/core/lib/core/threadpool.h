@@ -98,6 +98,9 @@ class ThreadPool {
   // thread in the pool. Returns -1 otherwise.
   int CurrentThreadId() const;
 
+  // Explicitly cancel the Eigen ThreadPoool
+  void Cancel();
+
   struct Impl;
 
  private:

@@ -38,13 +38,31 @@ namespace tensorflow {
 
 namespace {
 
+
+
 class StdThread : public Thread {
  public:
   // name and thread_options are both ignored.
   StdThread(const ThreadOptions& thread_options, const string& name,
             std::function<void()> fn)
-      : thread_(fn) {}
-  ~StdThread() override { thread_.join(); }
+      : thread_(fn) {
+        ///tf_thread = getUnderlyingThread();
+  	//atexit(atexit_handler);
+  }
+
+  // (dleoni) Return underlying std::thread
+  std::thread* getUnderlyingThread() override {
+  	return &thread_;
+  }
+
+  ~StdThread() override { 
+      //pthread_cancel(thread_.native_handle());
+      thread_.join(); 
+  }
+
+  /*std::thread* getUnderlyingThread() {
+      return &thread_;
+  }*/
 
  private:
   std::thread thread_;

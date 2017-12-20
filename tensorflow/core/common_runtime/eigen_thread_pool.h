@@ -31,6 +31,11 @@ class EigenThreadPoolWrapper : public Eigen::ThreadPoolInterface {
   }
   int NumThreads() const override { return pool_->NumThreads(); }
   int CurrentThreadId() const override { return pool_->CurrentThreadId(); }
+ 
+  // (dleoni) Allow cancellation of the EigenThreadPool
+  void Cancel() override {
+    pool_->Cancel();
+  }
 
  private:
   thread::ThreadPool* pool_ = nullptr;

@@ -45,6 +45,12 @@ class StdThread : public Thread {
   StdThread(const ThreadOptions& thread_options, const string& name,
             std::function<void()> fn)
       : thread_(fn) {}
+
+  // (dleoni) Return underlying std::thread
+  virtual std::thread* getUnderlyingThread() {
+  	return &thread_;
+  } 
+
   ~StdThread() { thread_.join(); }
 
  private:

@@ -25,8 +25,51 @@ limitations under the License.
 #include "tensorflow/core/platform/tracing.h"
 #include "tensorflow/core/platform/types.h"
 
+// (dleoni) Include vector to store created threads for later retrieving them
+#include <vector>
+
+// (dleoni) Include cstdlib to handle "exit" event
+#include <cstdlib>
+
+// (dleoni) Include to handle thread cancellation
+//#include <cxxabi.h>
+#include <chrono>
+#include <memory>
+
+// (dleoni) Pointers to threads in the intra-pool
+std::vector<tensorflow::Thread*> intra_threads;
+// (dleoni) Pointers to threads in the inter-pool
+std::vector<tensorflow::Thread*> inter_threads;
+
+/*
+// (dleoni) When the client Python program exits, dispose of the thread
+void atexit_handler () {
+ std::cout << "EXIT!!!" << std::endl;
+ // (dleoni) Call "pthread_join" for each thread in the pools
+ for (auto iterator = intra_threads.cbegin(); iterator != intra_threads.cend(); ++iterator) {
+  delete *iterator;
+ }
+ for (auto iterator = inter_threads.cbegin(); iterator != inter_threads.cend(); ++iterator) {
+  delete *iterator;
+ }
+}
+*/
+
+tensorflow::thread::ThreadPool* tf_intra_pool;
+tensorflow::thread::ThreadPool* tf_inter_pool;
+
+void intra_pool_exit_handler() {
+  //std::this_thread::sleep_for (std::chrono::seconds(5));
+  tf_intra_pool->Cancel();
+}
+
+void inter_pool_exit_handler() {
+  //std::this_thread::sleep_for (std::chrono::seconds(5)); 
+  tf_inter_pool->Cancel();  
+}
 namespace tensorflow {
 namespace thread {
+
 
 struct EigenEnvironment {
   typedef Thread EnvThread;
@@ -48,13 +91,32 @@ struct EigenEnvironment {
       : env_(env), thread_options_(thread_options), name_(name) {}
 
   EnvThread* CreateThread(std::function<void()> f) {
-    return env_->StartThread(thread_options_, name_, [=]() {
-      // Set the processor flag to flush denormals to zero.
-      port::ScopedFlushDenormal flush;
-      // Set the processor rounding mode to ROUND TO NEAREST.
-      port::ScopedSetRound round(FE_TONEAREST);
-      f();
+    
+    // (dleoni) Before returning the created thread, store it
+    EnvThread* created_thread = env_->StartThread(thread_options_, name_, [=]() {
+      
+      // (dleoni) Try-catch block to handle the cancellation of the thread
+      //try {
+       // Set the processor flag to flush denormals to zero.
+       port::ScopedFlushDenormal flush;
+       // Set the processor rounding mode to ROUND TO NEAREST.
+       port::ScopedSetRound round(FE_TONEAREST);
+       f();
+      /*}
+      catch (abi::__forced_unwind&) {
+       throw;
+      } catch (...) {
+        std::cout << "CAUGHT!!!" << std::endl;
+      }*/
     });
+    
+    // (dleoni) Return created thread after having stored it
+    if (!name_.compare("tf_Eigen")) {
+      intra_threads.push_back(created_thread);
+    } else { 
+      inter_threads.push_back(created_thread);
+    }
+    return created_thread;
   }
 
   Task CreateTask(std::function<void()> f) {
@@ -88,7 +150,10 @@ struct ThreadPool::Impl : Eigen::ThreadPoolTempl<EigenEnvironment> {
        int num_threads, bool low_latency_hint)
       : Eigen::ThreadPoolTempl<EigenEnvironment>(
             num_threads, low_latency_hint,
-            EigenEnvironment(env, thread_options, name)) {}
+            EigenEnvironment(env, thread_options, name)) {
+
+  	//atexit(atexit_handler);
+  }
 
   void ParallelFor(int64 total, int64 cost_per_unit,
                    std::function<void(int64, int64)> fn) {
@@ -114,6 +179,16 @@ ThreadPool::ThreadPool(Env* env, const ThreadOptions& thread_options,
   CHECK_GE(num_threads, 1);
   impl_.reset(new ThreadPool::Impl(env, thread_options, "tf_" + name,
                                    num_threads, low_latency_hint));
+  
+  // (dleoni) Store a pointer to this instance of tensorflow::ThreadPool and install the exit handler
+  // (when the client Python program exits, cancel the pool)
+  if (name.compare("Eigen")) {
+    tf_intra_pool = this;
+    atexit(intra_pool_exit_handler); 
+  } else {
+    tf_inter_pool = this;
+    atexit(inter_pool_exit_handler); 
+  }
 }
 
 ThreadPool::~ThreadPool() {}
@@ -146,5 +221,11 @@ int ThreadPool::NumThreads() const { return impl_->NumThreads(); }
 
 int ThreadPool::CurrentThreadId() const { return impl_->CurrentThreadId(); }
 
-}  // namespace thread
-}  // namespace tensorflow
+// (dleoni) Allow explicit cancellation of the Eigen ThreadPool
+void ThreadPool::Cancel()  { 
+  impl_->Cancel();
+  impl_.reset();
+}
+}
+}
+

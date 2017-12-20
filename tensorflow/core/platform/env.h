@@ -31,6 +31,9 @@ limitations under the License.
 #include "tensorflow/core/platform/protobuf.h"
 #include "tensorflow/core/platform/types.h"
 
+// (dleoni) Include std::thread
+#include <thread>
+
 namespace tensorflow {
 
 class Thread;
@@ -357,6 +360,9 @@ class Thread {
 
   /// Blocks until the thread of control stops running.
   virtual ~Thread();
+
+  // (dleoni) Return the underlying std::thread
+  virtual std::thread* getUnderlyingThread();
 
  private:
   TF_DISALLOW_COPY_AND_ASSIGN(Thread);

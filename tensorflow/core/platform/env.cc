@@ -17,6 +17,7 @@ limitations under the License.
 #include <deque>
 #include <utility>
 #include <vector>
+#include <thread>
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
 #endif
@@ -315,6 +316,9 @@ bool Env::LocalTempFilename(string* filename) {
 }
 
 Thread::~Thread() {}
+std::thread* Thread::getUnderlyingThread() {
+ int a = 0;
+}
 
 EnvWrapper::~EnvWrapper() {}
 
