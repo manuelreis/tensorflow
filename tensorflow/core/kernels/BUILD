@@ -1519,7 +1519,7 @@ cc_inc_library(
 tf_kernel_library(
     name = "resource_variable_ops",
     srcs = ["resource_variable_ops.cc"],
-    copts = ["-mrtm"],
+    copts = ["-mhtm"],
     deps = [
         "htm",
         ":bounds_check",
@@ -3308,7 +3308,7 @@ tf_kernel_library(
 tf_kernel_library(
     name = "scatter_op",
     prefix = "scatter_op",
-    copts = ["-mrtm"],
+    copts = ["-mhtm"],
     deps = STATE_DEPS,
 )
 
@@ -3428,7 +3428,7 @@ tf_kernel_library(
 tf_kernel_library(
     name = "training_ops",
     prefix = "training_ops",
-    copts = ["-mrtm"],
+    copts = ["-mhtm"],
     deps = [
         "htm",
         ":bounds_check",

@@ -2,162 +2,145 @@
 #define TM_H 1
 
 #  include <stdio.h>
-
-#ifndef REDUCED_TM_API
-
-#  define MAIN(argc, argv)              int main (int argc, char** argv)
-#  define MAIN_RETURN(val)              return val
-
-#  define GOTO_SIM()                    /* nothing */
-#  define GOTO_REAL()                   /* nothing */
-#  define IS_IN_SIM()                   (0)
-
-#  define SIM_GET_NUM_CPU(var)          /* nothing */
-
-#  define TM_PRINTF                     printf
-#  define TM_PRINT0                     printf
-#  define TM_PRINT1                     printf
-#  define TM_PRINT2                     printf
-#  define TM_PRINT3                     printf
-
-#  define P_MEMORY_STARTUP(numThread)   /* nothing */
-#  define P_MEMORY_SHUTDOWN()           /* nothing */
-
 #  include <assert.h>
 #  include <math.h>
-
-#  define TM_ARG                        /* nothing */
-#  define TM_ARG_ALONE                  /* nothing */
-#  define TM_ARGDECL                    /* nothing */
-#  define TM_ARGDECL_ALONE              /* nothing */
-#  define TM_CALLABLE                   /* nothing */
-
-#  define TM_BEGIN_WAIVER()
-#  define TM_END_WAIVER()
-
-#  define P_MALLOC(size)                malloc(size)
-#  define P_FREE(ptr)                   free(ptr)
-#  define TM_MALLOC(size)               malloc(size)
-#  define FAST_PATH_FREE(ptr)            free(ptr)
-#  define SLOW_PATH_FREE(ptr)             free(ptr)
-
-#  define SETUP_NUMBER_TASKS(n)
-#  define SETUP_NUMBER_THREADS(n)
-#  define PRINT_STATS()
-#  define AL_LOCK(idx)
-
-#endif
-
-#ifdef REDUCED_TM_API
-#    define local_thread_d()         get_tid()
-#else
-#    define local_thread_d()         thread_getId()
-#endif
-
-#  include <immintrin.h>
-#  include <rtmintrin.h>
+#  include <htmxlintrin.h>
 #  include "tensorflow/core/platform/mutex.h"
 
-# define CACHE_LINE_SIZE 64
+# define CACHE_LINE_SIZE 128
 
 typedef struct padded_statistics {
-    unsigned long commits;
-    unsigned long aborts;
-    unsigned long commits_with_lock;
-    unsigned long explicit_aborts;
-    unsigned long conflict_aborts;
+    unsigned long tle_commits;
+    unsigned long gl_commits;
+    unsigned long conflicts;
+    unsigned long self_conflicts;
+    unsigned long trans_conflicts;
+    unsigned long nontrans_conflicts;
     unsigned long capacity_aborts;
     unsigned long other_aborts;
-    unsigned long nested_aborts;
-    unsigned long debug_aborts;
-    unsigned long retry_aborts;
+    unsigned long user_aborts;
+    unsigned long persistent_failures;
     char suffixPadding[CACHE_LINE_SIZE];
 } __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t;
 
+// (dleoni) The matrix containing statistics about transactions and operations with:
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[];
+
 extern __thread int htm_budget;
 
+// (dleoni) The local thread unique identifier; used to track the 
+// per-thread statistics about transactions
 extern __thread int local_thread_id;
 
-#  define TM_STARTUP(numThread, bId)
-#  define TM_SHUTDOWN() { \
-        unsigned long commits = 0; \
-        unsigned long aborts = 0; \
-        unsigned long commits_with_lock = 0; \
-        unsigned long explicit_aborts = 0; \
-        unsigned long conflict_aborts = 0; \
-        unsigned long capacity_aborts = 0; \
-        unsigned long other_aborts = 0; \
-	unsigned long nested_aborts = 0; \
-	unsigned long debug_aborts = 0; \
-	unsigned long retry_aborts = 0; \
-        int i = 0; \
-        for (; i < 80; i++) { \
-            if (stats_array[i].commits + stats_array[i].commits_with_lock == 0) { break; } \
-                commits += stats_array[i].commits; \
-                aborts += stats_array[i].aborts; \
-                commits_with_lock += stats_array[i].commits_with_lock; \
-                explicit_aborts += stats_array[i].explicit_aborts; \
-                conflict_aborts += stats_array[i].conflict_aborts; \
-                capacity_aborts += stats_array[i].capacity_aborts; \
-                other_aborts += stats_array[i].other_aborts; \
-		nested_aborts += stats_array[i].nested_aborts; \
-  		debug_aborts += stats_array[i].debug_aborts; \
-		retry_aborts += stats_array[i].retry_aborts; \
-            } \
-        printf("TM commits: %lu\nTotal aborts: %lu\nTotal Lock Commits: %lu\nExplicit Aborts: %lu\nConflict Aborts: %lu\nCapacity Aborts: %lu\nOther Aborts: %lu\nNested Aborts: %lu\nDebug Aborts: %lu\nRetry Aborts: %lu\n", commits, aborts, commits_with_lock, explicit_aborts, conflict_aborts, capacity_aborts, other_aborts, nested_aborts, debug_aborts, retry_aborts); \
+extern __inline long
+__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+__TM_is_self_conflict(void* const TM_buff)
+{ 
+  texasr_t texasr = __builtin_get_texasr ();
+  return _TEXASR_SELF_INDUCED_CONFLICT (texasr);
 }
 
-# define TM_THREAD_ENTER()
-# define TM_THREAD_EXIT()
+extern __inline long
+__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+__TM_is_trans_conflict(void* const TM_buff)
+{ 
+  texasr_t texasr = __builtin_get_texasr ();
+  return _TEXASR_TRANSACTION_CONFLICT (texasr);
+}
+
+extern __inline long
+__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+__TM_is_nontrans_conflict(void* const TM_buff)
+{ 
+  texasr_t texasr = __builtin_get_texasr ();
+  return _TEXASR_NON_TRANSACTIONAL_CONFLICT (texasr);
+}
+
+#  define TM_SHUTDOWN() { \
+	        unsigned long tle_commits = 0; \
+	        unsigned long gl_commits = 0; \
+        	unsigned long conflicts = 0; \
+        	unsigned long self_conflicts = 0; \
+        	unsigned long trans_conflicts = 0; \
+        	unsigned long nontrans_conflicts = 0; \
+        	unsigned long capacity_aborts = 0; \
+        	unsigned long other_aborts = 0; \
+		unsigned long user_aborts = 0; \
+		unsigned long persistent_failures = 0; \
+       		int i = 0; \
+        	for (; i < 80; i++) { \
+            		if (stats_array[i].tle_commits + stats_array[i].gl_commits == 0) { continue; } \
+                	tle_commits += stats_array[i].tle_commits; \
+                	gl_commits += stats_array[i].gl_commits; \
+                	conflicts += stats_array[i].conflicts; \
+                	self_conflicts += stats_array[i].self_conflicts; \
+                        trans_conflicts += stats_array[i].trans_conflicts; \
+                        nontrans_conflicts += stats_array[i].nontrans_conflicts; \
+                	capacity_aborts += stats_array[i].capacity_aborts; \
+                	other_aborts += stats_array[i].other_aborts; \
+			user_aborts += stats_array[i].user_aborts; \
+  			persistent_failures += stats_array[i].persistent_failures; \
+            	} \
+	        printf("Total TLE Commits: %lu\nTotal Global Lock Commits: %lu\nTotal Conflicts: %lu\nTotal Self-Induced Conflicts: %lu\nTotal Transactional Conflicts: %lu\nTotal Non-Transactional Conflicts: %lu\nTotal Capacity Aborts: %lu\nTotal Other Aborts: %lu\nTotal User Aborts: %lu\nTotal Persistent Failures: %lu\n", tle_commits, gl_commits, conflicts, self_conflicts, trans_conflicts, nontrans_conflicts, capacity_aborts, other_aborts, user_aborts, persistent_failures); \
+}
 
 # define IS_LOCKED(mutex)        mutex->is_locked()
 
 # define RETRY_POLICY 5
-# define HTM_RETRIES 5
+# define HTM_RETRIES 100
 # define SPEND_BUDGET(b)    if(RETRY_POLICY == 0) (*b)=0; else if (RETRY_POLICY == 2) (*b)=(*b)/2; else (*b)=--(*b);
 
 # define TM_BEGIN(mutex) { \
         while (1) { \
             while (IS_LOCKED(mutex)) { \
-                __asm__ ( "pause;"); \
+                __asm volatile ("" : : : "memory"); \
             } \
-            unsigned int status = _xbegin(); \
-            if (status == _XBEGIN_STARTED) { \
+	    TM_buff_type TM_buff; \
+            unsigned int status = __TM_begin(&TM_buff); \
+            if (status == _HTM_TBEGIN_STARTED) { \
                 if (IS_LOCKED(mutex)) { \
-                    _xabort(30); \
+                    __TM_abort(); \
                 } \
                 break; \
             } \
-            else if (status == _XABORT_CAPACITY) { \
-                stats_array[local_thread_id].capacity_aborts++;\
-                SPEND_BUDGET(&htm_budget); \
-            } else \
-            { \
-                if (status & _XABORT_CONFLICT) {\
-                        stats_array[local_thread_id].conflict_aborts++;\
-                }\
-                else if (status & _XABORT_EXPLICIT) {\
-                        stats_array[local_thread_id].explicit_aborts++;\
-                }\
-                else if (status & _XABORT_NESTED) {\
-                        stats_array[local_thread_id].nested_aborts++;\
-                }\
-                else if (status & _XABORT_DEBUG) {\
-                        stats_array[local_thread_id].debug_aborts++;\
-                }\
-                else if (status & _XABORT_RETRY) {\
-                        stats_array[local_thread_id].retry_aborts++;\
-                }\
-                else {\
-                        stats_array[local_thread_id].other_aborts++;\
-                }\
-                htm_budget--; \
+            else { \
+		if(__TM_is_failure_persistent(&TM_buff)){ \
+			SPEND_BUDGET(&htm_budget); \
+                    	stats_array[local_thread_id].persistent_failures++; \
+			/*printf("SPEND BUDGET:%d\n", htm_budget); \
+                        fflush(stdout); \*/ \
+                } \
+		if(__TM_is_conflict(&TM_buff)){ \
+                        stats_array[local_thread_id].conflicts++; \
+			if(__TM_is_self_conflict(&TM_buff)) {stats_array[local_thread_id].self_conflicts++; }\
+			else if(__TM_is_trans_conflict(&TM_buff)) stats_array[local_thread_id].trans_conflicts++; \
+			else if(__TM_is_nontrans_conflict(&TM_buff)) stats_array[local_thread_id].nontrans_conflicts++; \
+			htm_budget--; \
+			/*printf("ABORT:%d\n", htm_budget); \
+                        fflush(stdout); \ */\
+                } \
+		else if (__TM_is_user_abort(&TM_buff)) { \
+			stats_array[local_thread_id].user_aborts++; \
+                        htm_budget--; \
+			/*printf("USER:%d\n", htm_budget); \
+                        fflush(stdout); \ */\
+                } \
+		else if(__TM_is_footprint_exceeded(&TM_buff)){ \
+			stats_array[local_thread_id].capacity_aborts++; \
+                        htm_budget--; \
+			/*printf("CAPACITY:%d\n", htm_budget); \
+                        fflush(stdout); \ */\
+                } \
+		else{ \
+			stats_array[local_thread_id].other_aborts++; \
+                        htm_budget--; \
+			/*printf("OTHER:%d\n", htm_budget); \
+                        fflush(stdout); \ */\
+                } \
             } \
-            stats_array[local_thread_id].aborts++; \
             if (htm_budget <= 0) {   \
 		mutex->lock(); \
-		break; \
+                break; \
             } \
         } \
 };
@@ -165,98 +148,86 @@ extern __thread int local_thread_id;
 
 # define TM_END(mutex){ \
     if (htm_budget > 0) { \
-        _xend(); \
-        stats_array[local_thread_id].commits++; \
+        __TM_end; \
+        stats_array[local_thread_id].tle_commits++; \
+	printf("COMMIT\n"); \
+	fflush(stdout); \
     } else {    \
         mutex->unlock(); \
-        stats_array[local_thread_id].commits_with_lock++; \
+        stats_array[local_thread_id].gl_commits++; \
+	printf("NO COMMITTA\n"); \
+        fflush(stdout); \	
     } \
 };
 
 # define TM_BEGIN_ADAM(mutex1, mutex2, mutex3) { \
         while (1) { \
             while (IS_LOCKED(mutex1) || IS_LOCKED(mutex2) || IS_LOCKED(mutex3)) { \
-                __asm__ ( "pause;"); \
+                __asm volatile ("" : : : "memory"); \
             } \
-            unsigned int status = _xbegin(); \
-            if (status == _XBEGIN_STARTED) { \
+	    TM_buff_type TM_buff; \
+            unsigned int status = __TM_begin(&TM_buff); \
+            if (status == _HTM_TBEGIN_STARTED) { \
                 if (IS_LOCKED(mutex1) || IS_LOCKED(mutex2) || IS_LOCKED(mutex3)) { \
-                    _xabort(30); \
+                    __TM_abort(); \
                 } \
                 break; \
             } \
-            else if (status == _XABORT_CAPACITY) { \
-                stats_array[local_thread_id].capacity_aborts++;\
-                SPEND_BUDGET(&htm_budget); \
-            } else \
-            { \
-                if (status & _XABORT_CONFLICT) {\
-                        stats_array[local_thread_id].conflict_aborts++;\
-                }\
-                else if (status & _XABORT_EXPLICIT) {\
-                        stats_array[local_thread_id].explicit_aborts++;\
-                }\
-                else if (status & _XABORT_NESTED) {\
-                        stats_array[local_thread_id].nested_aborts++;\
-                }\
-                else if (status & _XABORT_DEBUG) {\
-                        stats_array[local_thread_id].debug_aborts++;\
-                }\
-                else if (status & _XABORT_RETRY) {\
-                        stats_array[local_thread_id].retry_aborts++;\
-                }\
-                else {\
-                        stats_array[local_thread_id].other_aborts++;\
-                }\
-                htm_budget--; \
+            else { \
+		if(__TM_is_failure_persistent(&TM_buff)){ \
+			SPEND_BUDGET(&htm_budget); \
+                    	stats_array[local_thread_id].persistent_failures++; \
+			printf("SPEND BUDGET:%d\n", &htm_budget); \
+			fflush(stdout); \
+                } \
+		if(__TM_is_conflict(&TM_buff)){ \
+                        stats_array[local_thread_id].conflicts++; \
+			if(__TM_is_self_conflict(&TM_buff)) {stats_array[local_thread_id].self_conflicts++; }\
+			else if(__TM_is_trans_conflict(&TM_buff)) stats_array[local_thread_id].trans_conflicts++; \
+			else if(__TM_is_nontrans_conflict(&TM_buff)) stats_array[local_thread_id].nontrans_conflicts++; \
+			htm_budget--; \
+			printf("CONFLICT:%d\n", htm_budget); \
+                        fflush(stdout); \
+                } \
+		else if (__TM_is_user_abort(&TM_buff)) { \
+			stats_array[local_thread_id].user_aborts++; \
+                        htm_budget--; \
+			printf("USER ABORT:%d\n", htm_budget) ; \
+                        fflush(stdout); \
+                } \
+		else if(__TM_is_footprint_exceeded(&TM_buff)){ \
+			stats_array[local_thread_id].capacity_aborts++; \
+                        htm_budget--; \
+			printf("CAPACITY:%d\n", htm_budget); \
+                        fflush(stdout); \
+                } \
+		else{ \
+			stats_array[local_thread_id].other_aborts++; \
+                        htm_budget--; \
+			printf("OTHER:%d\n", htm_budget); \
+                        fflush(stdout); \
+                } \
             } \
-            stats_array[local_thread_id].aborts++; \
             if (htm_budget <= 0) {   \
 		mutex1->lock(); \
-                mutex2->lock(); \
-                mutex3->lock(); \
-		break; \
+		mutex2->lock(); \
+		mutex3->lock(); \
+                break; \
             } \
         } \
-};
+};             
 
-
-# define TM_END_ADAM(mutex1, mutex2, mutex3){ \
+# define TM_END_ADAM(mutex1, mutex_2, mutex3){ \
     if (htm_budget > 0) { \
-        _xend(); \
-        stats_array[local_thread_id].commits++; \
+        __TM_end; \
+        stats_array[local_thread_id].tle_commits++; \
     } else {    \
         mutex1->unlock(); \
         mutex2->unlock(); \
         mutex3->unlock(); \
-        stats_array[local_thread_id].commits_with_lock++; \
+        stats_array[local_thread_id].gl_commits++; \
     } \
 };
-
-#    define TM_BEGIN_RO()                 TM_BEGIN(0)
-#    define TM_RESTART()                  _xabort(0xab);;
-#    define TM_EARLY_RELEASE(var)
-
-# define FAST_PATH_RESTART() _xabort(0xab);
-# define FAST_PATH_SHARED_READ(var) (var)
-# define FAST_PATH_SHARED_READ_P(var) (var)
-# define FAST_PATH_SHARED_READ_D(var) (var)
-# define FAST_PATH_SHARED_WRITE(var, val) ({var = val; var;})
-# define FAST_PATH_SHARED_WRITE_P(var, val) ({var = val; var;})
-# define FAST_PATH_SHARED_WRITE_D(var, val) ({var = val; var;})
-
-# define SLOW_PATH_RESTART() FAST_PATH_RESTART()
-# define SLOW_PATH_SHARED_READ(var)           FAST_PATH_SHARED_READ(var)
-# define SLOW_PATH_SHARED_READ_P(var)         FAST_PATH_SHARED_READ_P(var)
-# define SLOW_PATH_SHARED_READ_F(var)         FAST_PATH_SHARED_READ_D(var)
-# define SLOW_PATH_SHARED_READ_D(var)         FAST_PATH_SHARED_READ_D(var)
-# define SLOW_PATH_SHARED_WRITE(var, val)     FAST_PATH_SHARED_WRITE(var, val)
-# define SLOW_PATH_SHARED_WRITE_P(var, val)   FAST_PATH_SHARED_WRITE_P(var, val)
-# define SLOW_PATH_SHARED_WRITE_D(var, val)   FAST_PATH_SHARED_WRITE_D(var, val)
-
-#  define TM_LOCAL_WRITE(var, val)      ({var = val; var;})
-#  define TM_LOCAL_WRITE_P(var, val)    ({var = val; var;})
-#  define TM_LOCAL_WRITE_D(var, val)    ({var = val; var;})
 
 
 #endif
